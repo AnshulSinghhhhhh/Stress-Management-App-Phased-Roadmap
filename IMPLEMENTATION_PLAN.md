@@ -102,16 +102,49 @@ This is the single most safety-critical component. Design it as an isolated modu
 
 **Phase 1 exit criteria (must all be true before Phase 2 features are exposed):** all rows above are live in production, crisis pathway has been manually reviewed by a second person (not the implementing agent), and data export/delete work end-to-end.
 
+### 1.1 Post-launch refinement: check-in depth (decided after reviewing real check-in data)
+Real usage showed the original single-screen check-in (slider + one emotional tag) didn't capture enough nuance, but a full Q&A-style questionnaire on every check-in would work against the "15 seconds" retention-friendly design principle above. Resolution — two changes, not a redesign:
+
+- **(A) Sequenced steps, not more fields**: present the existing fields (mood scale → contributing-category chips → optional free text) as a short step-by-step flow, similar to the onboarding pattern, rather than one dense screen. This is a presentation change — no new required input — but reads as a guided check-in rather than a form.
+- **(B) Time-of-day adaptive depth**: morning check-ins stay minimal (mood + tags only — true 15-second loop, protects the fast start-of-day habit). Evening check-ins default to one additional reflective prompt (e.g. "What's one thing that stayed with you today?"), based on observed usage showing people naturally write more in the evening.
+- **Trigger-category chips are added directly to the check-in screen** (the same 7 pinned categories from §2.0: work, financial, relationship, health, sleep, social_loneliness, identity), as quick one-tap selections. This does double duty: it reads as more of a guided Q&A, and it feeds the trigger classifier a `user_corrected`-quality signal directly, instead of relying only on inference from free text.
+- **Deliberately deferred**: an engagement-adaptive check-in that grows in depth per-user based on their history (tying into the Phase 2 personalization engine) is a good idea but needs real usage data to target correctly — revisit in Phase 2/3, not now.
+- **Known bug to fix in the same pass**: duplicate check-in rows have been observed (identical text/timestamp submitted twice) — likely a double-submit on the frontend or a missing idempotency check on `POST /checkins`. Fix this before or alongside the redesign, since duplicates will double-count in the stress-index trend and the trigger-recurrence counter.
+
 ---
 
 ## Phase 2 — Depth: Move from Symptom to Cause
+
+### 2.0 NLP & memory architecture for Phase 2 (read before building anything below)
+Phase 2 has four distinct NLP jobs — they intentionally don't all use the same approach, to avoid burning through NVIDIA NIM's free-tier rate limit (~40 req/min, no SLA) on work that doesn't need a full LLM call.
+
+| Job | Approach | Why |
+|---|---|---|
+| Trigger taxonomy classification | **Local embedding model** (`sentence-transformers/all-MiniLM-L6-v2`, CPU, no API call) comparing check-in text against a small few-shot example set per category via cosine similarity. Fall back to a NIM call only when similarity confidence is below a threshold. | Runs on ~every check-in — must be free, instant, and not rate-limited. User corrections get appended to the few-shot example set, which improves accuracy over time with no retraining step. |
+| Deeper CBT-style probing question (on 3+ recurrence) | **Retrieval-grounded** NIM call: retrieve the user's 2–3 most similar past check-ins via pgvector cosine search, include their actual phrasing as context, then generate a single reflective question — never advice, never a diagnosis. | Low frequency (fires only on recurrence), generation task genuinely needs an LLM, and grounding it in the user's real words (not just a category label) makes the question feel responsive rather than generic. |
+| Actionable vs. adaptive branch | **Not inferred by NLP at all** — ask the user directly ("is this something you can act on, or ongoing?"). | More accurate than inference, and reinforces the "why am I seeing this" transparency requirement. |
+| Weekly summary / pattern insight | Pattern itself is computed as **plain statistics** (day-of-week correlation, sleep-precedes-spike correlation) from `stress_index_daily` + `trigger_tags` in a scheduled job. One NIM call per user per week turns the computed fact into a plain-language sentence — never real-time, always cached. Retrieval isn't needed here since the stats already are the relevant memory. | Keeps the one genuinely "insight-sounding" feature cheap and infrequent. |
+
+> **Pinned category set — do not rename, substitute, or drop any of these.** The trigger taxonomy is exactly these 7 categories, matching the original roadmap word-for-word: `work`, `financial`, `relationship`, `health`, `sleep`, `social_loneliness`, `identity`. All code (few-shot examples, enum values, migration columns, dashboard labels, life-stage pre-surfacing logic) must use this exact set. This is called out explicitly because an earlier implementation pass silently drifted to a different 7-category set (renaming several and dropping `social_loneliness` in favor of an `academic_pressure` category that only fits one of the four life-stage branches) — that drift broke downstream consistency across the root-cause dashboard, weekly summaries, and life-stage onboarding, all of which key off this exact list. If a future task seems to call for a different or expanded category, that's a decision to flag and confirm, not to make silently.
+
+**"Why am I seeing this" explanations are never model-generated.** Every recommendation payload includes a templated reason string sourced directly from the rule or data point that produced it (e.g. "you rated square breathing 4/5 the last 3 times"). This guarantees the explanation can never be a hallucination.
+
+#### Memory: lightweight, per-user RAG (not a general document-corpus RAG)
+- No separate vector database — use the **`pgvector` extension on the existing Supabase Postgres** (free, no new service).
+- Add a `checkins.embedding` column (`vector` type). Compute it once per check-in using the same local embedding model already used for trigger classification — one embedding call serves both jobs, no duplicate work.
+- Retrieval is a plain SQL cosine-similarity query scoped to `WHERE user_id = :user_id` — retrieval never crosses users, by construction, not just by policy.
+- Retrieved text is only ever used in-memory to build a NIM prompt; it is never logged and never sent anywhere except the NIM API call itself.
+- Because the embedding is just another column keyed to `checkin_id`, it is deleted automatically by the existing `data_deletion_requests` flow (§0.3) — no new deletion logic needed.
+- Privacy note: `checkins.free_text` is `pgcrypto`-encrypted at rest, but its embedding is derived before encryption and stored queryable. Embeddings aren't trivially reversible to the original text, but this isn't zero information leakage — acceptable for a prototype; revisit (e.g. encrypt embeddings too, accepting slower retrieval) before any real user data is at stake.
+
+**Guardrail carried over from the crisis pathway**: the embedding classifier must have a working, local fallback path if NIM is unreachable — trigger tagging should never fail or block a check-in just because the NIM free tier is rate-limited at that moment. Only the recurrence-probe and weekly-summary jobs are allowed to simply skip/retry-later if NIM is unavailable, since neither is time-critical.
 
 **Goal:** explain *why*, not just soothe symptoms.
 **Success signal to exit phase:** users engage with root-cause insights (not just relief exercises) and week-over-week retention improves.
 
 | Feature | API | Data touched | Done when |
 |---|---|---|---|
-| Trigger taxonomy (7 categories) | `POST /triggers`, `GET /triggers` | new `trigger_tags` table (checkin_id, category, confidence) | Every check-in with free text gets tagged via a NIM model call, user can correct tags |
+| Trigger taxonomy (7 categories: `work`, `financial`, `relationship`, `health`, `sleep`, `social_loneliness`, `identity` — pinned, see §2.0) | `POST /triggers`, `GET /triggers` | new `trigger_tags` table (checkin_id, category, confidence, source: 'embedding'\|'nim'\|'user_corrected'); `checkins.embedding` (pgvector, shared with RAG retrieval — see §2.0) | Every check-in with free text gets tagged via the local embedding classifier (§2.0), falling back to NIM only on low confidence; user can correct tags |
 | Deeper probing after 3+ recurrences | conversation flow in `POST /checkins` response | `trigger_tags` aggregated | When a category recurs ≥3x in a rolling 14-day window, next check-in includes 1–2 CBT-style follow-up questions |
 | Root-cause dashboard (separate from mood) | `GET /dashboard/causes` | `trigger_tags` | Ranked list by frequency × intensity, distinct screen from stress-index trend |
 | Actionable vs. adaptive branch | classification field on `trigger_tags` | `trigger_tags.branch` (enum) | User is asked once per recurring trigger whether it's "something I can act on" vs "ongoing" — informs which content Phase 2/3 surfaces |

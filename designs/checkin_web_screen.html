@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sanctuary — Daily Pause</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-tertiary": "#ffffff",
+            "primary": "#435c4b",
+            "error-container": "#ffdad6",
+            "tertiary": "#495a4f",
+            "on-background": "#111c2c",
+            "on-secondary-fixed-variant": "#394b3f",
+            "on-primary-container": "#ddfbe4",
+            "secondary-fixed": "#d3e8d7",
+            "on-tertiary-fixed-variant": "#394b40",
+            "outline": "#737973",
+            "on-primary-fixed-variant": "#334c3c",
+            "secondary-container": "#d3e8d7",
+            "on-primary": "#ffffff",
+            "inverse-surface": "#263142",
+            "on-tertiary-container": "#e4f8e9",
+            "tertiary-fixed-dim": "#b8cbbd",
+            "on-error": "#ffffff",
+            "surface-container-lowest": "#ffffff",
+            "tertiary-container": "#617367",
+            "surface-dim": "#cfdaf1",
+            "surface-container-highest": "#d8e3fa",
+            "primary-container": "#5b7563",
+            "outline-variant": "#c2c8c1",
+            "surface-container-low": "#f0f3ff",
+            "surface-tint": "#4b6453",
+            "primary-fixed-dim": "#b1cdb8",
+            "secondary": "#506356",
+            "on-tertiary-fixed": "#0e1f16",
+            "surface": "#f9f9ff",
+            "inverse-on-surface": "#ebf1ff",
+            "on-surface-variant": "#424843",
+            "tertiary-fixed": "#d4e7d9",
+            "error": "#ba1a1a",
+            "surface-bright": "#f9f9ff",
+            "surface-container-high": "#dee8ff",
+            "on-error-container": "#93000a",
+            "primary-fixed": "#cdead4",
+            "surface-container": "#e7eeff",
+            "on-surface": "#111c2c",
+            "on-secondary": "#ffffff",
+            "on-secondary-fixed": "#0e1f15",
+            "on-secondary-container": "#56695c",
+            "inverse-primary": "#b1cdb8",
+            "surface-variant": "#d8e3fa",
+            "on-primary-fixed": "#072013",
+            "secondary-fixed-dim": "#b7cbbc",
+            "background": "#f9f9ff"
+          },
+          "borderRadius": {
+            "DEFAULT": "1rem",
+            "lg": "2rem",
+            "xl": "3rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-sm": "0.75rem",
+            "space-lg": "2rem",
+            "space-md": "1.25rem",
+            "gutter": "1.5rem",
+            "margin-mobile": "1.25rem",
+            "gutter-mobile": "1rem",
+            "space-xs": "0.375rem",
+            "space-xl": "3.5rem",
+            "margin": "3rem"
+          },
+          "fontFamily": {
+            "body-md": ["Inter"],
+            "headline-lg-mobile": ["Plus Jakarta Sans"],
+            "headline-lg": ["Plus Jakarta Sans"],
+            "display": ["Plus Jakarta Sans"],
+            "body-sm": ["Inter"],
+            "label-md": ["Inter"],
+            "label-lg": ["Inter"],
+            "headline-md": ["Plus Jakarta Sans"],
+            "headline-sm": ["Plus Jakarta Sans"],
+            "label-sm": ["Inter"],
+            "display-mobile": ["Plus Jakarta Sans"],
+            "body-lg": ["Inter"]
+          },
+          "fontSize": {
+            "body-md": ["1rem", { "lineHeight": "1.65rem", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-lg-mobile": ["1.625rem", { "lineHeight": "2.125rem", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+            "headline-lg": ["2rem", { "lineHeight": "2.5rem", "letterSpacing": "-0.015em", "fontWeight": "500" }],
+            "display": ["2.5rem", { "lineHeight": "3rem", "letterSpacing": "-0.02em", "fontWeight": "500" }],
+            "body-sm": ["0.875rem", { "lineHeight": "1.45rem", "letterSpacing": "0.005em", "fontWeight": "400" }],
+            "label-md": ["0.8125rem", { "lineHeight": "1.25rem", "letterSpacing": "0.015em", "fontWeight": "500" }],
+            "label-lg": ["0.9375rem", { "lineHeight": "1.375rem", "letterSpacing": "0.01em", "fontWeight": "500" }],
+            "headline-md": ["1.5rem", { "lineHeight": "2rem", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+            "headline-sm": ["1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.005em", "fontWeight": "500" }],
+            "label-sm": ["0.75rem", { "lineHeight": "1.125rem", "letterSpacing": "0.02em", "fontWeight": "500" }],
+            "display-mobile": ["2rem", { "lineHeight": "2.5rem", "letterSpacing": "-0.015em", "fontWeight": "500" }],
+            "body-lg": ["1.125rem", { "lineHeight": "1.875rem", "letterSpacing": "0em", "fontWeight": "400" }]
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      display: inline-block;
+      text-transform: none;
+      letter-spacing: normal;
+      word-wrap: normal;
+      white-space: nowrap;
+      direction: ltr;
+      -webkit-font-smoothing: antialiased;
+    }
+    @keyframes pulse-calm {
+      0%, 100% { transform: scale(1); opacity: 0.85; }
+      50% { transform: scale(1.08); opacity: 0.45; }
+    }
+    .animate-breathe {
+      animation: pulse-calm 8s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen flex flex-col justify-between selection:bg-secondary-container selection:text-primary">
+<!-- TopNavBar (Shared Component) -->
+<header class="w-full sticky top-0 z-40 px-gutter md:px-margin py-space-sm flex justify-between items-center max-w-[1280px] mx-auto bg-surface dark:bg-inverse-surface border-b border-outline-variant dark:border-outline shadow-[0px_4px_20px_-4px_rgba(36,51,44,0.04)]">
+<!-- Brand and Breadcrumbs -->
+<div class="flex items-center space-x-4">
+<div class="flex items-center space-x-2">
+<div class="w-7 h-7 rounded-full bg-secondary-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="spa" style="font-size: 16px;">spa</span>
+</div>
+<span class="font-headline-sm text-headline-sm font-medium text-primary dark:text-inverse-primary tracking-tight">Sanctuary</span>
+</div>
+<span class="text-outline-variant">/</span>
+<nav class="flex items-center space-x-2">
+<span class="text-on-surface dark:text-inverse-on-surface font-label-md text-label-md border-b-2 border-primary pb-1">Stress Management / Daily Pause</span>
+</nav>
+</div>
+<!-- Center Ambient Date Indicator -->
+<div class="hidden lg:flex items-center space-x-2 px-3 py-1 rounded-full bg-surface-container-low border border-outline-variant text-on-surface-variant font-label-sm text-label-sm">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span>Tuesday Morning • October 24</span>
+</div>
+<!-- Right Actions / Controls -->
+<div class="flex items-center space-x-3">
+<button aria-label="Calendar view" class="p-2 rounded-full text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors duration-200 ease-out" type="button">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+</button>
+<button aria-label="Notifications" class="p-2 rounded-full text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors duration-200 ease-out" type="button">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button aria-label="Settings" class="p-2 rounded-full text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors duration-200 ease-out" type="button">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+</button>
+<div class="h-4 w-px bg-outline-variant mx-1"></div>
+<button class="bg-primary-container text-on-primary font-label-md text-label-md px-4 py-2 rounded-full hover:bg-primary transition-all duration-200 ease-out active:scale-[0.98] shadow-sm" type="button">
+        Complete Session
+      </button>
+</div>
+</header>
+<!-- Main Canvas: Focused 720px Interaction Lane -->
+<main class="flex-1 w-full max-w-[720px] mx-auto px-gutter-mobile md:px-gutter py-space-xl flex flex-col space-y-8">
+<!-- Hero Header with Breathing Ambient Ornament -->
+<div class="relative flex flex-col items-center text-center space-y-3 pt-2">
+<!-- Ambient Calm Glow -->
+<div class="absolute -top-6 w-32 h-32 rounded-full bg-secondary-container blur-2xl opacity-40 pointer-events-none"></div>
+<!-- Ambient Morning Badge -->
+<div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-secondary-container/60 border border-outline-variant text-on-secondary-container font-label-sm text-label-sm mb-1">
+<span class="material-symbols-outlined text-primary" data-icon="wb_twilight" style="font-size: 15px;">wb_twilight</span>
+<span>Gentle morning pause • Unhurried</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight font-medium">
+        How does this moment feel?
+      </h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-md">
+        Take a breath. A quick tap is all you need.
+      </p>
+</div>
+<!-- Hero Mood Scale (15-second interaction card) -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-lg shadow-[0px_4px_20px_-4px_rgba(36,51,44,0.04)] transition-all duration-200 space-y-6">
+<div class="flex items-center justify-between border-b border-surface-container-low pb-4">
+<div class="flex items-center space-x-3">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-headline-sm text-headline-sm font-semibold shadow-sm">
+            7
+          </div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-medium">Peaceful &amp; Grounded</h2>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Selected state • Centered rhythm</p>
+</div>
+</div>
+<div class="flex items-center space-x-1 text-primary text-label-sm font-label-sm bg-secondary-container/40 px-3 py-1 rounded-full">
+<span class="material-symbols-outlined" data-icon="check_circle" style="font-size: 14px;">check_circle</span>
+<span>Synced</span>
+</div>
+</div>
+<!-- Tactile 1-10 Step Buttons -->
+<div class="space-y-3">
+<div class="grid grid-cols-10 gap-1.5 md:gap-2.5">
+<!-- Step 1 -->
+<button class="aspect-square flex flex-col items-center justify-center rounded-full border border-outline-variant bg-surface hover:border-primary text-on-surface-variant font-label-md text-label-md transition-all duration-200 hover:scale-105 active:scale-95" type="button">1</button>
+<!-- Step 2 -->
+<button class="aspect-square flex flex-col items-center justify-center rounded-full border border-outline-variant bg-surface hover:border-primary text-on-surface-variant font-label-md text-label-md transition-all duration-200 hover:scale-105 active:scale-95" type="button">2</button>
+<!-- Step 3 -->
+<button class="aspect-square flex flex-col items-center justify-center rounded-full border border-outline-variant bg-surface hover:border-primary text-on-surface-variant font-label-md text-label-md transition-all duration-200 hover:scale-105 active:scale-95" type="button">3</button>
+<!-- Step 4 -->
+<button class="aspect-square flex flex-col items-center justify-center rounded-full border border-outline-variant bg-surface hover:border-primary text-on-surface-variant font-label-md text-label-md transition-all duration-200 hover:scale-105 active:scale-95" type="button">4</button>
+<!-- Step 5 -->
+<button class="aspect-square flex flex-col items-center justify-center rounded-full border border-outline-variant bg-surface hover:border-primary text-on-surface-variant font-label-md text-label-md transition-all duration-200 hover:scale-105 active:scale-95" type="button">5</button>
+<!-- Step 6 -->
+<button class="aspect-square flex flex-col items-center justify-center rounded-full border border-outline-variant bg-surface hover:border-primary text-on-surface-variant font-label-md text-label-md transition-all duration-200 hover:scale-105 active:scale-95" type="button">6</button>
+<!-- Step 7 (Active State) -->
+<button class="aspect-square flex flex-col items-center justify-center rounded-full bg-primary-container text-on-primary font-headline-sm text-headline-sm font-semibold shadow-md ring-4 ring-secondary-container transition-transform duration-200 scale-110" type="button">7</button>
+<!-- Step 8 -->
+<button class="aspect-square flex flex-col items-center justify-center rounded-full border border-outline-variant bg-surface hover:border-primary text-on-surface-variant font-label-md text-label-md transition-all duration-200 hover:scale-105 active:scale-95" type="button">8</button>
+<!-- Step 9 -->
+<button class="aspect-square flex flex-col items-center justify-center rounded-full border border-outline-variant bg-surface hover:border-primary text-on-surface-variant font-label-md text-label-md transition-all duration-200 hover:scale-105 active:scale-95" type="button">9</button>
+<!-- Step 10 -->
+<button class="aspect-square flex flex-col items-center justify-center rounded-full border border-outline-variant bg-surface hover:border-primary text-on-surface-variant font-label-md text-label-md transition-all duration-200 hover:scale-105 active:scale-95" type="button">10</button>
+</div>
+<!-- Qualitative Anchors -->
+<div class="flex justify-between items-center px-1 text-on-surface-variant font-label-sm text-label-sm pt-2">
+<span>1: Very low / Drained</span>
+<span class="hidden sm:inline-block text-outline">5: Steady &amp; Balanced</span>
+<span>10: Radiant &amp; Thriving</span>
+</div>
+</div>
+</section>
+<!-- Emotional Texture Quick Tags -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-lg shadow-[0px_4px_20px_-4px_rgba(36,51,44,0.04)] space-y-4">
+<div class="flex items-center justify-between">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-medium">Emotional texture</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Tap any that apply to this moment</p>
+</div>
+<span class="font-label-sm text-label-sm text-outline">2 selected</span>
+</div>
+<!-- Tag Cloud -->
+<div class="flex flex-wrap gap-2.5 pt-1">
+<!-- Selected 1 -->
+<button class="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-secondary-container border border-primary text-on-surface font-label-md text-label-md transition-all duration-200 shadow-sm" type="button">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span>Calm</span>
+<span class="material-symbols-outlined text-primary" data-icon="check" style="font-size: 14px;">check</span>
+</button>
+<!-- Selected 2 -->
+<button class="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-secondary-container border border-primary text-on-surface font-label-md text-label-md transition-all duration-200 shadow-sm" type="button">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span>Grateful</span>
+<span class="material-symbols-outlined text-primary" data-icon="check" style="font-size: 14px;">check</span>
+</button>
+<!-- Unselected Pills -->
+<button class="inline-flex items-center px-4 py-2 rounded-full bg-surface border border-outline-variant text-on-surface-variant font-label-md text-label-md hover:border-primary hover:text-on-surface transition-all duration-200" type="button">
+          Unfocused
+        </button>
+<button class="inline-flex items-center px-4 py-2 rounded-full bg-surface border border-outline-variant text-on-surface-variant font-label-md text-label-md hover:border-primary hover:text-on-surface transition-all duration-200" type="button">
+          Tired
+        </button>
+<button class="inline-flex items-center px-4 py-2 rounded-full bg-surface border border-outline-variant text-on-surface-variant font-label-md text-label-md hover:border-primary hover:text-on-surface transition-all duration-200" type="button">
+          Content
+        </button>
+<button class="inline-flex items-center px-4 py-2 rounded-full bg-surface border border-outline-variant text-on-surface-variant font-label-md text-label-md hover:border-primary hover:text-on-surface transition-all duration-200" type="button">
+          Restless
+        </button>
+<button class="inline-flex items-center px-4 py-2 rounded-full bg-surface border border-outline-variant text-on-surface-variant font-label-md text-label-md hover:border-primary hover:text-on-surface transition-all duration-200" type="button">
+          Overwhelmed
+        </button>
+<button class="inline-flex items-center px-4 py-2 rounded-full bg-surface border border-outline-variant text-on-surface-variant font-label-md text-label-md hover:border-primary hover:text-on-surface transition-all duration-200" type="button">
+          Hopeful
+        </button>
+</div>
+</section>
+<!-- Reflection Input (Dual Mode: Voice & Quiet Text) -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-lg shadow-[0px_4px_20px_-4px_rgba(36,51,44,0.04)] space-y-5">
+<div class="flex items-center justify-between">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-medium">Gentle reflection</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Optional voice note or words</p>
+</div>
+<!-- Subtle Pacing Indicator -->
+<div class="flex items-center space-x-2 text-outline font-label-sm text-label-sm">
+<div class="w-3.5 h-3.5 rounded-full bg-secondary-container flex items-center justify-center animate-breathe">
+<div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+</div>
+<span>Paced rhythm</span>
+</div>
+</div>
+<!-- Voice Quick Option Pill & Visualizer -->
+<div class="flex flex-col sm:flex-row items-center justify-between p-3.5 rounded-lg bg-surface-container-low border border-outline-variant gap-3">
+<button class="w-full sm:w-auto inline-flex items-center justify-center space-x-2.5 px-4 py-2 rounded-full bg-surface border border-outline-variant hover:border-primary text-on-surface font-label-md text-label-md transition-all duration-200 hover:shadow-sm" type="button">
+<span class="material-symbols-outlined text-primary" data-icon="mic">mic</span>
+<span>Tap to record voice note</span>
+</button>
+<!-- Dynamic Audio Waveform Visualizer -->
+<div class="flex items-center space-x-1.5 h-6 px-3">
+<span class="w-1 h-2 bg-outline-variant rounded-full"></span>
+<span class="w-1 h-4 bg-outline-variant rounded-full"></span>
+<span class="w-1 h-3 bg-secondary-container rounded-full"></span>
+<span class="w-1 h-5 bg-primary rounded-full"></span>
+<span class="w-1 h-6 bg-primary rounded-full"></span>
+<span class="w-1 h-3 bg-secondary-container rounded-full"></span>
+<span class="w-1 h-5 bg-primary rounded-full"></span>
+<span class="w-1 h-2 bg-outline-variant rounded-full"></span>
+<span class="w-1 h-4 bg-outline-variant rounded-full"></span>
+<span class="w-1 h-1 bg-outline-variant rounded-full"></span>
+</div>
+</div>
+<!-- Expansive Distraction-Free Textarea -->
+<div class="relative">
+<textarea class="w-full rounded-DEFAULT bg-surface border border-outline-variant p-4 font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 resize-none transition-colors duration-200" placeholder="Leave any thoughts here... (optional)" rows="4"></textarea>
+<div class="flex justify-between items-center pt-2 px-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="flex items-center space-x-1">
+<span class="material-symbols-outlined" data-icon="lock" style="font-size: 13px;">lock</span>
+<span>Saved locally on your device</span>
+</span>
+<span class="text-outline">Words are purely for you</span>
+</div>
+</div>
+</section>
+<!-- Primary Action & Privacy Reassurance -->
+<div class="flex flex-col items-center space-y-4 pt-2 pb-6">
+<button class="w-full sm:w-80 flex items-center justify-center space-x-2 py-3.5 px-8 rounded-full bg-primary-container hover:bg-primary text-on-primary font-label-lg text-label-lg font-medium transition-all duration-200 ease-out shadow-md active:scale-[0.99]" type="button">
+<span>Complete Check-in</span>
+<span class="material-symbols-outlined" data-icon="arrow_forward" style="font-size: 18px;">arrow_forward</span>
+</button>
+<!-- Reassurance Bar -->
+<div class="flex items-center space-x-2 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-primary" data-icon="verified_user" style="font-size: 16px;">verified_user</span>
+<span>Private &amp; encrypted • Takes under 15 seconds • No streaks, no pressure</span>
+</div>
+</div>
+</main>
+<!-- Minimal Web Footer (Shared Component) -->
+<footer class="w-full py-space-md px-gutter md:px-margin flex flex-col md:flex-row justify-between items-center max-w-[960px] mx-auto border-t border-outline-variant dark:border-outline bg-surface dark:bg-inverse-surface">
+<div class="flex items-center space-x-2 mb-3 md:mb-0">
+<span class="font-headline-sm text-headline-sm font-medium text-primary dark:text-inverse-primary">Sanctuary</span>
+<span class="text-outline-variant">•</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant">© 2024 Sanctuary. End-to-end encrypted &amp; fully private.</p>
+</div>
+<div class="flex items-center space-x-6">
+<a class="text-on-surface-variant dark:text-surface-variant font-label-sm text-label-sm hover:text-on-surface dark:hover:text-inverse-on-surface transition-colors duration-200" href="#">Privacy Principles</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-label-sm text-label-sm hover:text-on-surface dark:hover:text-inverse-on-surface transition-colors duration-200" href="#">Quiet Mode Guide</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-label-sm text-label-sm hover:text-on-surface dark:hover:text-inverse-on-surface transition-colors duration-200" href="#">Emergency Resources</a>
+</div>
+</footer>
+</body></html>

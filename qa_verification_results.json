@@ -1,0 +1,102 @@
+[
+  {
+    "feature_id": 1,
+    "name": "Profile setup + baseline (5-6 Qs)",
+    "criterion": "New user completes onboarding once; answers stored; can't be re-triggered accidentally.",
+    "status": "PASS",
+    "latency_ms": 19.66,
+    "details": "Baseline stored successfully; answers encrypted/stored; re-trigger returned 'already_exists' preserving initial answers.",
+    "latency_benchmark": {
+      "runs": 30,
+      "min_ms": 3.7,
+      "mean_ms": 4.58,
+      "max_ms": 6.49,
+      "p95_ms": 5.86,
+      "p99_ms": 6.49
+    }
+  },
+  {
+    "feature_id": 2,
+    "name": "Daily check-in (AM/PM)",
+    "criterion": "Check-in feels like 15 seconds; mood 1-10 slider; free text/voice note; emotional tags; daily stress index recalculated on each new check-in.",
+    "status": "PASS",
+    "latency_ms": 9.05,
+    "details": "AM & PM check-ins recorded with tags and notes; daily stress index recalculated on each submission (22.22 -> 44.44); mood score bounds 1-10 strictly validated.",
+    "latency_benchmark": {
+      "runs": 20,
+      "min_ms": 6.26,
+      "mean_ms": 8.78,
+      "max_ms": 18.36,
+      "p95_ms": 18.36,
+      "p99_ms": 18.36
+    }
+  },
+  {
+    "feature_id": 3,
+    "name": "No-wearable default / optional wearable",
+    "criterion": "App fully functional with zero wearable connected; wearable data stored only if user opts in.",
+    "status": "PASS",
+    "latency_ms": 43.69,
+    "details": "App fully functional with 0 wearables; Apple Health connection successfully stored upon explicit opt-in; invalid providers rejected with 400.",
+    "latency_benchmark": {}
+  },
+  {
+    "feature_id": 4,
+    "name": "Manual 'I'm stressed right now' trigger",
+    "criterion": "Runs through crisis detector synchronously (<50ms) before returning relief suggestions.",
+    "status": "PASS",
+    "latency_ms": 8.03,
+    "details": "Synchronous crisis detection executed in 8.03ms (<50ms requirement verified); returned crisis resources immediately.",
+    "latency_benchmark": {
+      "runs": 25,
+      "min_ms": 6.89,
+      "mean_ms": 9.27,
+      "max_ms": 13.59,
+      "p95_ms": 13.2,
+      "p99_ms": 13.59
+    }
+  },
+  {
+    "feature_id": 5,
+    "name": "Relief library (3 techniques)",
+    "criterion": "3 techniques (square_breathing, grounding_54321, micro_meditation); each has guided timer/script; completion + self-reported relief rating (1-5) recorded.",
+    "status": "PASS",
+    "latency_ms": 3.91,
+    "details": "All 3 techniques verified with pacing & scripts; session completed and relief rating (5/5) persisted; rating bounds (1-5) strictly enforced.",
+    "latency_benchmark": {}
+  },
+  {
+    "feature_id": 6,
+    "name": "Stress index logging + trend line",
+    "criterion": "Line chart for last 7/30 days displays calculated daily stress scores.",
+    "status": "PASS",
+    "latency_ms": 6.08,
+    "details": "Historical daily points returned with date, score, and contributing checkin metadata for both 7-day and 30-day queries.",
+    "latency_benchmark": {}
+  },
+  {
+    "feature_id": 7,
+    "name": "Crisis pathway",
+    "criterion": "Never gated behind login friction, latency <50ms, returns Tele MANAS (14416), KIRAN (1800-599-0019), Emergency (112), clickable tel: links, terracotta styling (#A36B5E) with NO raw red alarm styling, immutable append-only crisis_events.",
+    "status": "PASS",
+    "latency_ms": 6.4,
+    "details": "Anonymous crisis check returned in 6.40ms (P99: 4.99ms, well under 50ms limit); Tele MANAS, KIRAN, 112 with tel: links verified; logged to immutable crisis_events.",
+    "latency_benchmark": {
+      "runs": 50,
+      "min_ms": 3.57,
+      "mean_ms": 4.26,
+      "max_ms": 4.99,
+      "p95_ms": 4.85,
+      "p99_ms": 4.99
+    }
+  },
+  {
+    "feature_id": 8,
+    "name": "Data export & deletion",
+    "criterion": "Export produces complete downloadable JSON of all user data; delete is irreversible and confirmed via double opt-in.",
+    "status": "PASS",
+    "latency_ms": 11.8,
+    "details": "Complete multi-domain JSON package produced in 11.80ms; double opt-in enforced (confirm=False rejected); irreversible cascade wipe verified while preserving anonymized crisis safety log.",
+    "latency_benchmark": {}
+  }
+]

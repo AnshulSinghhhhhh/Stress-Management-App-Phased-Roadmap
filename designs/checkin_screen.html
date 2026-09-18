@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Daily Check-in</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "background": "#f9f9ff",
+            "tertiary-fixed": "#d4e7d9",
+            "on-tertiary": "#ffffff",
+            "on-primary-fixed": "#072013",
+            "error-container": "#ffdad6",
+            "on-primary-container": "#ddfbe4",
+            "on-surface": "#111c2c",
+            "secondary-container": "#d3e8d7",
+            "surface-container-high": "#dee8ff",
+            "outline-variant": "#c2c8c1",
+            "outline": "#737973",
+            "error": "#ba1a1a",
+            "secondary": "#506356",
+            "on-surface-variant": "#424843",
+            "tertiary-fixed-dim": "#b8cbbd",
+            "surface-dim": "#cfdaf1",
+            "on-tertiary-fixed-variant": "#394b40",
+            "inverse-primary": "#b1cdb8",
+            "surface": "#f9f9ff",
+            "surface-variant": "#d8e3fa",
+            "surface-bright": "#f9f9ff",
+            "inverse-surface": "#263142",
+            "secondary-fixed-dim": "#b7cbbc",
+            "on-secondary-fixed": "#0e1f15",
+            "primary-fixed": "#cdead4",
+            "surface-container-low": "#f0f3ff",
+            "primary-fixed-dim": "#b1cdb8",
+            "on-error": "#ffffff",
+            "surface-container-lowest": "#ffffff",
+            "on-primary-fixed-variant": "#334c3c",
+            "on-tertiary-container": "#e4f8e9",
+            "on-primary": "#ffffff",
+            "on-tertiary-fixed": "#0e1f16",
+            "on-secondary-fixed-variant": "#394b3f",
+            "primary-container": "#5b7563",
+            "on-secondary-container": "#56695c",
+            "on-secondary": "#ffffff",
+            "secondary-fixed": "#d3e8d7",
+            "on-error-container": "#93000a",
+            "surface-tint": "#4b6453",
+            "inverse-on-surface": "#ebf1ff",
+            "tertiary-container": "#617367",
+            "on-background": "#111c2c",
+            "surface-container": "#e7eeff",
+            "primary": "#435c4b",
+            "surface-container-highest": "#d8e3fa",
+            "tertiary": "#495a4f"
+          },
+          "borderRadius": {
+            "DEFAULT": "1rem",
+            "lg": "2rem",
+            "xl": "3rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "gutter-mobile": "1rem",
+            "space-xl": "3.5rem",
+            "margin-mobile": "1.25rem",
+            "gutter": "1.5rem",
+            "space-md": "1.25rem",
+            "margin": "3rem",
+            "space-lg": "2rem",
+            "space-sm": "0.75rem",
+            "space-xs": "0.375rem"
+          },
+          "fontFamily": {
+            "label-md": ["Inter"],
+            "label-lg": ["Inter"],
+            "label-sm": ["Inter"],
+            "headline-lg": ["Plus Jakarta Sans"],
+            "body-sm": ["Inter"],
+            "display": ["Plus Jakarta Sans"],
+            "headline-sm": ["Plus Jakarta Sans"],
+            "display-mobile": ["Plus Jakarta Sans"],
+            "headline-md": ["Plus Jakarta Sans"],
+            "body-md": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-lg-mobile": ["Plus Jakarta Sans"]
+          },
+          "fontSize": {
+            "label-md": ["0.8125rem", { "lineHeight": "1.25rem", "letterSpacing": "0.015em", "fontWeight": "500" }],
+            "label-lg": ["0.9375rem", { "lineHeight": "1.375rem", "letterSpacing": "0.01em", "fontWeight": "500" }],
+            "label-sm": ["0.75rem", { "lineHeight": "1.125rem", "letterSpacing": "0.02em", "fontWeight": "500" }],
+            "headline-lg": ["2rem", { "lineHeight": "2.5rem", "letterSpacing": "-0.015em", "fontWeight": "500" }],
+            "body-sm": ["0.875rem", { "lineHeight": "1.45rem", "letterSpacing": "0.005em", "fontWeight": "400" }],
+            "display": ["2.5rem", { "lineHeight": "3rem", "letterSpacing": "-0.02em", "fontWeight": "500" }],
+            "headline-sm": ["1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.005em", "fontWeight": "500" }],
+            "display-mobile": ["2rem", { "lineHeight": "2.5rem", "letterSpacing": "-0.015em", "fontWeight": "500" }],
+            "headline-md": ["1.5rem", { "lineHeight": "2rem", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+            "body-md": ["1rem", { "lineHeight": "1.65rem", "letterSpacing": "0em", "fontWeight": "400" }],
+            "body-lg": ["1.125rem", { "lineHeight": "1.875rem", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-lg-mobile": ["1.625rem", { "lineHeight": "2.125rem", "letterSpacing": "-0.01em", "fontWeight": "500" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    /* Rhythmic slow breathing pace circle */
+    @keyframes slowBreathe {
+      0%, 100% { transform: scale(1); opacity: 0.35; }
+      50% { transform: scale(1.18); opacity: 0.65; }
+    }
+    .animate-breathe {
+      animation: slowBreathe 8s ease-in-out infinite;
+    }
+    /* Hide scrollbar for gentle pill strips */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface antialiased min-h-screen flex flex-col justify-between selection:bg-secondary-container">
+<!-- Mobile Screen Container (Standard Phone Canvas ~390px centered) -->
+<div class="w-full max-w-[420px] mx-auto min-h-screen flex flex-col bg-background relative shadow-sm pb-28">
+<!-- TopAppBar from Shared Components JSON -->
+<header class="w-full sticky top-0 z-40 bg-background/90 backdrop-blur-md">
+<div class="flex justify-between items-center w-full px-gutter-mobile py-space-sm max-w-lg mx-auto">
+<button aria-label="Dismiss check-in" class="p-2 text-on-surface-variant hover:bg-surface-container-low transition-all duration-200 active:scale-95 rounded-full flex items-center justify-center" type="button">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+<div class="flex flex-col items-center">
+<h1 class="text-headline-sm font-headline-sm text-on-surface tracking-tight font-medium">Daily Check-in</h1>
+<span class="text-label-sm font-label-sm text-on-surface-variant flex items-center gap-1.5 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+            Tuesday Morning • Daily Pause
+          </span>
+</div>
+<button aria-label="Mindful space" class="p-2 text-primary hover:bg-surface-container-low transition-all duration-200 active:scale-95 rounded-full flex items-center justify-center" type="button">
+<span class="material-symbols-outlined" data-icon="spa">spa</span>
+</button>
+</div>
+</header>
+<!-- Main Content Flow (engineered for &lt;15s non-stimulating interaction) -->
+<main class="flex-1 px-gutter-mobile pt-space-sm space-y-space-md">
+<!-- Gentle Prompt Header with Ambient Breathing Pacer -->
+<section class="flex items-start justify-between pt-space-xs">
+<div class="space-y-1">
+<h2 class="text-headline-lg-mobile font-headline-lg-mobile text-on-surface font-semibold tracking-tight">
+            How does this moment feel?
+          </h2>
+<p class="text-body-sm font-body-sm text-on-surface-variant">
+            Take a breath. A quick tap is all you need.
+          </p>
+</div>
+<!-- Pacing Indicator (Non-intrusive organic micro-breath) -->
+<div class="relative w-9 h-9 flex items-center justify-center shrink-0 mt-1" title="Paced breathing companion">
+<div class="absolute inset-0 rounded-full bg-secondary-container animate-breathe"></div>
+<div class="w-3.5 h-3.5 rounded-full bg-primary-container transition-transform"></div>
+</div>
+</section>
+<!-- 1-10 Mood Scale (Primary Hero Interaction) -->
+<section class="bg-surface-container-lowest rounded-3xl p-5 border border-outline-variant/60 shadow-[0px_4px_20px_-4px_rgba(36,51,44,0.04)] space-y-4">
+<!-- Live Selected State Feedback -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<span class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container font-headline-sm text-headline-sm flex items-center justify-center font-medium" id="selected-number">
+              7
+            </span>
+<span class="text-headline-sm font-headline-sm text-primary font-medium tracking-tight" id="mood-label">
+              Peaceful &amp; Grounded
+            </span>
+</div>
+<span class="text-label-sm font-label-sm text-on-surface-variant">1 to 10</span>
+</div>
+<!-- 1-10 Numeric Stepper Strip -->
+<div class="flex items-center justify-between gap-1 overflow-x-auto no-scrollbar py-1" id="mood-scale-container">
+<button class="mood-pill w-9 h-11 rounded-2xl flex items-center justify-center text-label-md font-label-md bg-surface-container-low text-on-surface-variant hover:bg-secondary-container transition-all active:scale-95" data-desc="Low energy &amp; weary" data-val="1" type="button">1</button>
+<button class="mood-pill w-9 h-11 rounded-2xl flex items-center justify-center text-label-md font-label-md bg-surface-container-low text-on-surface-variant hover:bg-secondary-container transition-all active:scale-95" data-desc="Delicate &amp; quiet" data-val="2" type="button">2</button>
+<button class="mood-pill w-9 h-11 rounded-2xl flex items-center justify-center text-label-md font-label-md bg-surface-container-low text-on-surface-variant hover:bg-secondary-container transition-all active:scale-95" data-desc="Slightly heavy" data-val="3" type="button">3</button>
+<button class="mood-pill w-9 h-11 rounded-2xl flex items-center justify-center text-label-md font-label-md bg-surface-container-low text-on-surface-variant hover:bg-secondary-container transition-all active:scale-95" data-desc="Settling in" data-val="4" type="button">4</button>
+<button class="mood-pill w-9 h-11 rounded-2xl flex items-center justify-center text-label-md font-label-md bg-surface-container-low text-on-surface-variant hover:bg-secondary-container transition-all active:scale-95" data-desc="Steady &amp; centered" data-val="5" type="button">5</button>
+<button class="mood-pill w-9 h-11 rounded-2xl flex items-center justify-center text-label-md font-label-md bg-surface-container-low text-on-surface-variant hover:bg-secondary-container transition-all active:scale-95" data-desc="Warm &amp; present" data-val="6" type="button">6</button>
+<button class="mood-pill w-9 h-11 rounded-2xl flex items-center justify-center text-label-md font-label-md bg-primary-container text-on-primary font-semibold shadow-sm transition-all active:scale-95 ring-2 ring-primary-container/20" data-desc="Peaceful &amp; Grounded" data-val="7" type="button">7</button>
+<button class="mood-pill w-9 h-11 rounded-2xl flex items-center justify-center text-label-md font-label-md bg-surface-container-low text-on-surface-variant hover:bg-secondary-container transition-all active:scale-95" data-desc="Light &amp; refreshed" data-val="8" type="button">8</button>
+<button class="mood-pill w-9 h-11 rounded-2xl flex items-center justify-center text-label-md font-label-md bg-surface-container-low text-on-surface-variant hover:bg-secondary-container transition-all active:scale-95" data-desc="Vibrant &amp; energized" data-val="9" type="button">9</button>
+<button class="mood-pill w-9 h-11 rounded-2xl flex items-center justify-center text-label-md font-label-md bg-surface-container-low text-on-surface-variant hover:bg-secondary-container transition-all active:scale-95" data-desc="Radiant &amp; Thriving" data-val="10" type="button">10</button>
+</div>
+<!-- Subtle Gradient Track Anchors (Non-judgmental) -->
+<div class="pt-1">
+<div class="w-full h-1.5 rounded-full bg-gradient-to-r from-surface-variant via-secondary-container to-primary-container/70 opacity-70"></div>
+<div class="flex justify-between items-center text-label-sm font-label-sm text-on-surface-variant pt-2">
+<span>Low energy</span>
+<span>Steady</span>
+<span>Radiant</span>
+</div>
+</div>
+</section>
+<!-- Quick-State Chips (Optional 1-tap emotional nuances) -->
+<section class="space-y-2.5">
+<div class="flex items-center justify-between">
+<span class="text-label-md font-label-md text-on-surface font-medium">Emotional texture</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Tap any that apply</span>
+</div>
+<div class="flex flex-wrap gap-2" id="chips-container">
+<button class="chip-item px-3.5 py-1.5 rounded-full text-label-md font-label-md bg-secondary-container text-primary border border-primary-container/30 flex items-center gap-1.5 transition-all duration-200" type="button">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+            Calm
+          </button>
+<button class="chip-item px-3.5 py-1.5 rounded-full text-label-md font-label-md bg-surface-container-lowest text-on-surface-variant border border-outline-variant/70 flex items-center gap-1.5 transition-all duration-200 hover:bg-surface-container-low" type="button">
+            Grateful
+          </button>
+<button class="chip-item px-3.5 py-1.5 rounded-full text-label-md font-label-md bg-surface-container-lowest text-on-surface-variant border border-outline-variant/70 flex items-center gap-1.5 transition-all duration-200 hover:bg-surface-container-low" type="button">
+            Unfocused
+          </button>
+<button class="chip-item px-3.5 py-1.5 rounded-full text-label-md font-label-md bg-surface-container-lowest text-on-surface-variant border border-outline-variant/70 flex items-center gap-1.5 transition-all duration-200 hover:bg-surface-container-low" type="button">
+            Tired
+          </button>
+<button class="chip-item px-3.5 py-1.5 rounded-full text-label-md font-label-md bg-surface-container-lowest text-on-surface-variant border border-outline-variant/70 flex items-center gap-1.5 transition-all duration-200 hover:bg-surface-container-low" type="button">
+            Content
+          </button>
+<button class="chip-item px-3.5 py-1.5 rounded-full text-label-md font-label-md bg-surface-container-lowest text-on-surface-variant border border-outline-variant/70 flex items-center gap-1.5 transition-all duration-200 hover:bg-surface-container-low" type="button">
+            Restless
+          </button>
+</div>
+</section>
+<!-- Frictionless Reflection (Voice or Text note) -->
+<section class="bg-surface-container-lowest rounded-3xl p-4 border border-outline-variant/60 shadow-[0px_4px_20px_-4px_rgba(36,51,44,0.04)] space-y-3">
+<!-- Spoken / Audio Reflection Quick Action -->
+<div class="flex items-center justify-between pb-1 border-b border-outline-variant/30">
+<button class="flex items-center gap-2 text-label-md font-label-md text-primary bg-secondary-container/60 hover:bg-secondary-container px-3.5 py-1.5 rounded-full transition-all active:scale-95" id="voice-record-btn" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="mic">mic</span>
+<span>Tap to record voice note</span>
+</button>
+<!-- Subtle Waveform Outline Indicator -->
+<div class="flex items-center gap-1 px-2 py-1 opacity-60">
+<span class="w-0.5 h-3 bg-primary-container rounded-full animate-pulse"></span>
+<span class="w-0.5 h-5 bg-primary-container rounded-full"></span>
+<span class="w-0.5 h-2.5 bg-primary-container rounded-full"></span>
+<span class="w-0.5 h-4 bg-primary-container rounded-full"></span>
+</div>
+</div>
+<!-- Quiet Text Reflection Area -->
+<div>
+<textarea class="w-full bg-transparent border-0 resize-none text-body-sm font-body-sm text-on-surface placeholder:text-outline focus:ring-0 p-1 focus:outline-none" placeholder="Any thoughts you'd like to leave here? (optional)" rows="2"></textarea>
+</div>
+</section>
+<!-- Grounded Submit Action Button -->
+<section class="pt-2 pb-3 space-y-2">
+<button class="w-full bg-primary-container hover:bg-primary text-on-primary py-3.5 px-6 rounded-full font-label-lg text-label-lg flex items-center justify-center gap-2 shadow-[0px_8px_28px_-6px_rgba(36,51,44,0.06)] transition-all duration-200 active:scale-[0.98]" id="complete-btn" type="button">
+<span>Complete Check-in</span>
+<span class="material-symbols-outlined text-[20px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<p class="text-center text-label-sm font-label-sm text-on-surface-variant flex items-center justify-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-outline" data-icon="lock">lock</span>
+          Private to your journal • Takes just a moment
+        </p>
+</section>
+</main>
+<!-- BottomNavBar from Shared Components JSON -->
+<!-- Active mapping: Check-in maps to "Today" destination -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter-mobile py-space-xs bg-surface dark:bg-inverse-surface shadow-[0px_-4px_20px_rgba(0,0,0,0.03)]">
+<!-- Destination 1: Today (Active) -->
+<a class="flex flex-col items-center justify-center bg-secondary-container dark:bg-secondary text-on-secondary-container dark:text-on-secondary rounded-full px-4 py-1.5 transition-all duration-200 ease-out active:scale-95" href="#">
+<span class="material-symbols-outlined text-[22px]" data-icon="calendar_today">calendar_today</span>
+<span class="text-label-sm font-label-sm mt-0.5">Today</span>
+</a>
+<!-- Destination 2: Reflect -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-4 py-1.5 hover:text-primary dark:hover:text-inverse-primary transition-colors duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined text-[22px]" data-icon="self_improvement">self_improvement</span>
+<span class="text-label-sm font-label-sm mt-0.5">Reflect</span>
+</a>
+<!-- Destination 3: Breathe -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-4 py-1.5 hover:text-primary dark:hover:text-inverse-primary transition-colors duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined text-[22px]" data-icon="air">air</span>
+<span class="text-label-sm font-label-sm mt-0.5">Breathe</span>
+</a>
+<!-- Destination 4: Space -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-4 py-1.5 hover:text-primary dark:hover:text-inverse-primary transition-colors duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined text-[22px]" data-icon="spa">spa</span>
+<span class="text-label-sm font-label-sm mt-0.5">Space</span>
+</a>
+</nav>
+</div>
+<!-- Minimal Micro-Interaction Script for Fluid Feedback -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Mood Scale Interaction
+      const moodPills = document.querySelectorAll('.mood-pill');
+      const selectedNum = document.getElementById('selected-number');
+      const moodLabel = document.getElementById('mood-label');
+
+      moodPills.forEach(pill => {
+        pill.addEventListener('click', () => {
+          // Reset previous active
+          moodPills.forEach(p => {
+            p.className = 'mood-pill w-9 h-11 rounded-2xl flex items-center justify-center text-label-md font-label-md bg-surface-container-low text-on-surface-variant hover:bg-secondary-container transition-all active:scale-95';
+          });
+          // Set new active
+          pill.className = 'mood-pill w-9 h-11 rounded-2xl flex items-center justify-center text-label-md font-label-md bg-primary-container text-on-primary font-semibold shadow-sm transition-all active:scale-95 ring-2 ring-primary-container/20';
+          
+          const val = pill.getAttribute('data-val');
+          const desc = pill.getAttribute('data-desc');
+          
+          if (selectedNum) selectedNum.textContent = val;
+          if (moodLabel) moodLabel.textContent = desc;
+        });
+      });
+
+      // Quick Chips Toggle
+      const chips = document.querySelectorAll('.chip-item');
+      chips.forEach(chip => {
+        chip.addEventListener('click', () => {
+          const isSelected = chip.classList.contains('bg-secondary-container');
+          if (isSelected) {
+            chip.className = 'chip-item px-3.5 py-1.5 rounded-full text-label-md font-label-md bg-surface-container-lowest text-on-surface-variant border border-outline-variant/70 flex items-center gap-1.5 transition-all duration-200 hover:bg-surface-container-low';
+            const dot = chip.querySelector('span.w-1\\.5');
+            if (dot) dot.remove();
+          } else {
+            chip.className = 'chip-item px-3.5 py-1.5 rounded-full text-label-md font-label-md bg-secondary-container text-primary border border-primary-container/30 flex items-center gap-1.5 transition-all duration-200';
+            const dot = document.createElement('span');
+            dot.className = 'w-1.5 h-1.5 rounded-full bg-primary-container';
+            chip.prepend(dot);
+          }
+        });
+      });
+
+      // Simple voice note toggle feedback
+      const voiceBtn = document.getElementById('voice-record-btn');
+      let recording = false;
+      if (voiceBtn) {
+        voiceBtn.addEventListener('click', () => {
+          recording = !recording;
+          if (recording) {
+            voiceBtn.innerHTML = '<span class="material-symbols-outlined text-[18px] text-primary" data-icon="graphic_eq">graphic_eq</span><span>Listening... tap to pause</span>';
+          } else {
+            voiceBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]" data-icon="mic">mic</span><span>Recorded 4s note • Tap to re-record</span>';
+          }
+        });
+      }
+
+      // Check-in submission feedback
+      const completeBtn = document.getElementById('complete-btn');
+      if (completeBtn) {
+        completeBtn.addEventListener('click', () => {
+          completeBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]" data-icon="check">check</span><span>Saved gently</span>';
+          completeBtn.classList.replace('bg-primary-container', 'bg-secondary');
+          setTimeout(() => {
+            completeBtn.innerHTML = '<span>Complete Check-in</span><span class="material-symbols-outlined text-[20px]" data-icon="arrow_forward">arrow_forward</span>';
+            completeBtn.classList.replace('bg-secondary', 'bg-primary-container');
+          }, 2400);
+        });
+      }
+    });
+  </script>
+</body></html>
