@@ -26,3 +26,6 @@ Thumbs.db
 # Supabase temp
 supabase/.temp/
 .temp/
+
+# Local screenshot and capture scripts
+*.cjs

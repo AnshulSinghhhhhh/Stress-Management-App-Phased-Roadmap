@@ -6,11 +6,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models import (
-    User, BaselineProfile, Checkin, DailyStressIndex,
-    ReliefSession, WearableConnection, ConsentLog,
-    DataExportRequest, DataDeletionRequest, CrisisEvent,
-    utc_now
+    User, BaselineProfile, BaselineSnapshot, Checkin,
+    CheckinFeaturesDerived, StressTrendsLongitudinal,
+    DailyStressIndex, ReliefSession, WearableConnection,
+    ConsentLog, DataExportRequest, DataDeletionRequest,
+    CrisisEvent, utc_now
 )
+
 from app.schemas import (
     DataExportRequestModel, DataExportResponse,
     DataDeleteRequest, DataDeleteResponse
@@ -102,6 +104,20 @@ def export_user_data(
         for w in connections
     ]
 
+    # 6b. Baseline Snapshots
+    snapshots = db.query(BaselineSnapshot).filter(BaselineSnapshot.user_id == user_id).all()
+    snapshots_data = [
+        {
+            "id": s.id,
+            "version": s.version,
+            "scale_name": s.scale_name,
+            "score_normalized": s.score_normalized,
+            "answers_json": s.answers_json,
+            "created_at": s.created_at.isoformat()
+        }
+        for s in snapshots
+    ]
+
     # 6. Consent Logs
     consent_logs = db.query(ConsentLog).filter(ConsentLog.user_id == user_id).all()
     consent_data = [
@@ -139,6 +155,7 @@ def export_user_data(
     full_payload = {
         "user": user_data,
         "baseline_profile": baseline_data,
+        "baseline_snapshots": snapshots_data,
         "checkins": checkins_data,
         "stress_index_daily": daily_data,
         "relief_sessions": sessions_data,
@@ -174,10 +191,16 @@ def delete_user_data(
         )
 
     # Anonymize crisis events (strip user linkage while keeping safety log immutable)
-    db.query(CrisisEvent).filter(CrisisEvent.user_id == user_id).update({"user_id": None})
+    try:
+        db.query(CrisisEvent).filter(CrisisEvent.user_id == user_id).update({"user_id": None})
+    except Exception:
+        pass
 
     # Delete related tables
+    db.query(BaselineSnapshot).filter(BaselineSnapshot.user_id == user_id).delete()
     db.query(BaselineProfile).filter(BaselineProfile.user_id == user_id).delete()
+    db.query(CheckinFeaturesDerived).filter(CheckinFeaturesDerived.user_id == user_id).delete()
+    db.query(StressTrendsLongitudinal).filter(StressTrendsLongitudinal.user_id == user_id).delete()
     db.query(Checkin).filter(Checkin.user_id == user_id).delete()
     db.query(DailyStressIndex).filter(DailyStressIndex.user_id == user_id).delete()
     db.query(ReliefSession).filter(ReliefSession.user_id == user_id).delete()
@@ -185,6 +208,7 @@ def delete_user_data(
     db.query(ConsentLog).filter(ConsentLog.user_id == user_id).delete()
     db.query(DataExportRequest).filter(DataExportRequest.user_id == user_id).delete()
     db.query(DataDeletionRequest).filter(DataDeletionRequest.user_id == user_id).delete()
+
 
     # Finally delete the user record
     db.delete(user)

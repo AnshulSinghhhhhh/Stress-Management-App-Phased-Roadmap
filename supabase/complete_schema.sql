@@ -289,4 +289,70 @@ CREATE INDEX IF NOT EXISTS idx_trigger_tags_category ON trigger_tags(category);
 ALTER TABLE trigger_tags ENABLE ROW LEVEL SECURITY;
 CREATE POLICY trigger_tags_user_isolation ON trigger_tags FOR ALL USING (auth.uid() = user_id);
 
+-- =============================================================================
+-- PHASE 2 v2: LONGITUDINAL SCHEMA, BASELINE SNAPSHOTS & IDEMPOTENCY
+-- =============================================================================
+
+-- 1. Checkin idempotency, emotional tags & metadata
+ALTER TABLE public.checkins ADD COLUMN IF NOT EXISTS idempotency_key UUID DEFAULT gen_random_uuid();
+CREATE UNIQUE INDEX IF NOT EXISTS idx_checkins_idempotency_key ON public.checkins(idempotency_key);
+
+ALTER TABLE public.checkins ADD COLUMN IF NOT EXISTS emotional_tags JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.checkins ADD COLUMN IF NOT EXISTS embedding_model_version TEXT DEFAULT 'all-MiniLM-L6-v2-v1';
+ALTER TABLE public.checkins ADD COLUMN IF NOT EXISTS questionnaire_version TEXT DEFAULT '2.0.0';
+ALTER TABLE public.checkins ADD COLUMN IF NOT EXISTS scale_version TEXT DEFAULT '2.0.0';
+ALTER TABLE public.checkins ADD COLUMN IF NOT EXISTS user_tz_offset_minutes INT DEFAULT 0;
+ALTER TABLE public.checkins ALTER COLUMN type TYPE TEXT;
+
+-- 2. Baseline Snapshots
+CREATE TABLE IF NOT EXISTS public.baseline_snapshots (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    version TEXT NOT NULL DEFAULT '2.0.0',
+    scale_name TEXT NOT NULL DEFAULT 'who5_adapted',
+    score_normalized NUMERIC(5, 2) NOT NULL CHECK (score_normalized >= 0.00 AND score_normalized <= 100.00),
+    answers_json JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+CREATE INDEX IF NOT EXISTS idx_baseline_snapshots_user ON public.baseline_snapshots(user_id, created_at DESC);
+ALTER TABLE public.baseline_snapshots ENABLE ROW LEVEL SECURITY;
+CREATE POLICY baseline_snapshots_user_isolation ON public.baseline_snapshots FOR ALL USING (auth.uid() = user_id);
+
+-- 3. Checkin Features Derived
+CREATE TABLE IF NOT EXISTS public.checkin_features_derived (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    checkin_id UUID NOT NULL REFERENCES public.checkins(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    derived_stress_score NUMERIC(5, 2) NOT NULL,
+    baseline_delta NUMERIC(5, 2),
+    circadian_bucket TEXT NOT NULL DEFAULT 'day',
+    confidence NUMERIC(4, 3) NOT NULL DEFAULT 1.000,
+    model_version TEXT NOT NULL DEFAULT 'calibrated_v2',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+CREATE INDEX IF NOT EXISTS idx_features_checkin ON public.checkin_features_derived(checkin_id);
+CREATE INDEX IF NOT EXISTS idx_features_user ON public.checkin_features_derived(user_id, created_at DESC);
+ALTER TABLE public.checkin_features_derived ENABLE ROW LEVEL SECURITY;
+CREATE POLICY checkin_features_user_isolation ON public.checkin_features_derived FOR ALL USING (auth.uid() = user_id);
+
+-- 4. Stress Trends Longitudinal
+CREATE TABLE IF NOT EXISTS public.stress_trends_longitudinal (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    date DATE NOT NULL,
+    weighted_mean NUMERIC(5, 2) NOT NULL,
+    confidence NUMERIC(4, 3) NOT NULL,
+    n_eff NUMERIC(6, 2) NOT NULL,
+    distinct_days_count INT NOT NULL,
+    trend_slope NUMERIC(5, 2),
+    status TEXT NOT NULL DEFAULT 'calibrating',
+    contributing_factors_json JSONB DEFAULT '[]'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+    UNIQUE(user_id, date)
+);
+CREATE INDEX IF NOT EXISTS idx_trends_user_date ON public.stress_trends_longitudinal(user_id, date DESC);
+ALTER TABLE public.stress_trends_longitudinal ENABLE ROW LEVEL SECURITY;
+CREATE POLICY stress_trends_user_isolation ON public.stress_trends_longitudinal FOR ALL USING (auth.uid() = user_id);
+
+
 

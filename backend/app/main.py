@@ -15,6 +15,7 @@ from app.api.stress_index import router as stress_index_router
 from app.api.export import router as export_router
 from app.api.integrations import router as integrations_router
 from app.api.triggers import router as triggers_router
+from app.api.consent import router as consent_router
 
 def init_db():
     """Create all database tables and seed demo user."""
@@ -70,6 +71,7 @@ all_routers = [
     export_router,
     integrations_router,
     triggers_router,  # Phase 2 §2.0
+    consent_router,   # Phase 2 v2
 ]
 
 for router in all_routers:

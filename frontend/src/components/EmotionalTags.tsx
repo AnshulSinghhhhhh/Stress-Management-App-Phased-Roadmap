@@ -25,14 +25,14 @@ export const EmotionalTags: React.FC<EmotionalTagsProps> = ({
     <section className="bg-surfaceLowest border border-outline-variant rounded-2xl p-6 shadow-resting space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-headline text-lg text-on-surface font-medium">
+          <h3 className="font-headline text-lg text-on-surface font-semibold">
             Emotional texture
           </h3>
-          <p className="text-xs text-on-surface-variant">
-            Tap any that apply to this moment
+          <p className="text-sm text-stone-700">
+            Select any that describe how you feel
           </p>
         </div>
-        <span className="text-xs text-outline font-medium">
+        <span className="text-sm text-stone-700 font-medium">
           {selectedTags.length > 0 ? `${selectedTags.length} selected` : 'None selected'}
         </span>
       </div>
@@ -47,17 +47,17 @@ export const EmotionalTags: React.FC<EmotionalTagsProps> = ({
               type="button"
               onClick={() => onToggleTag(tag)}
               aria-pressed={isSelected}
-              className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+              className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                 isSelected
-                  ? 'bg-secondary-container border border-primary text-on-surface shadow-sm'
-                  : 'bg-surface border border-outline-variant text-on-surface-variant hover:border-primary hover:text-on-surface'
+                  ? 'bg-secondary-container border border-primary text-primary-dark shadow-xs'
+                  : 'bg-surface border border-outline-variant text-stone-700 hover:border-primary hover:text-on-surface'
               }`}
             >
               {isSelected && (
                 <>
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                  <span className="w-2 h-2 rounded-full bg-primary" />
                   <span>{tag}</span>
-                  <Check className="w-3.5 h-3.5 text-primary" />
+                  <Check className="w-4 h-4 text-primary" />
                 </>
               )}
               {!isSelected && <span>{tag}</span>}

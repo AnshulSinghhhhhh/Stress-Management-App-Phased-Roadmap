@@ -11,10 +11,17 @@ import {
   WearableStatus,
   TriggerCategory,
   TriggerTagResponse,
+  CalibratedIndicator,
+  PacingStatus,
+  ConsentItem,
+  ConsentStatus,
+  LongitudinalTrendResponse,
+  BaselineSnapshot,
+  QuestionnaireCatalog,
 } from './types';
 export { supabase } from './supabase';
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://127.0.0.1:8008/api/v1';
 
 // Centralized India Crisis Resources per SOP §6 and backend/app/core/crisis_resources.py
 export const OFFICIAL_CRISIS_PAYLOAD: CrisisResponse = {
@@ -187,24 +194,47 @@ function saveLocalCheckin(checkin: CheckinResponse) {
 
 export const apiClient = {
   /**
-   * Submit daily or manual check-in
+   * Submit daily or manual check-in with idempotency protection and 0-100 normalization
    */
   async submitCheckin(payload: CheckinPayload): Promise<CheckinResponse> {
     const isCrisis = detectCrisisInText(payload.free_text);
-    
-    // Invert mood for stress score: mood 10 -> stress 1, mood 1 -> stress 10
-    const calculatedStress = Math.max(1, Math.min(10, 11 - payload.mood_score));
+    const idempotency_key =
+      payload.idempotency_key ||
+      (typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : 'idem-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9));
+
+    const enrichedPayload: CheckinPayload = {
+      ...payload,
+      idempotency_key,
+      user_tz_offset_minutes: payload.user_tz_offset_minutes ?? new Date().getTimezoneOffset() * -1,
+    };
+
+    // Normalized stress score: mood 1 -> 90, mood 10 -> 0 (0-100 scale)
+    const calculatedStress = Math.max(0, Math.min(100, Math.round((10 - payload.mood_score) * 10)));
 
     try {
       const res = await fetch(`${API_BASE_URL}/checkins`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(enrichedPayload),
       });
       if (res.ok) {
         const data = await res.json();
-        saveLocalCheckin(data);
-        return data;
+        const normalizedResponse: CheckinResponse = {
+          ...data,
+          trigger_category: data.trigger_category ?? payload.trigger_category,
+          trigger_categories: (data.trigger_categories && data.trigger_categories.length > 0)
+            ? data.trigger_categories
+            : (payload.trigger_categories && payload.trigger_categories.length > 0)
+            ? payload.trigger_categories
+            : payload.trigger_category
+            ? [payload.trigger_category]
+            : [],
+          stress_score: data.derived_stress_score ?? data.stress_score ?? calculatedStress,
+        };
+        saveLocalCheckin(normalizedResponse);
+        return normalizedResponse;
       }
       if (res.status === 409) {
         const errData = await res.json().catch(() => ({}));
@@ -217,22 +247,81 @@ export const apiClient = {
       // Backend offline: run deterministic fallback
     }
 
+    // Offline / local feeling classifier fallback
+    const detectedFeelings: string[] = [];
+    if (payload.free_text) {
+      const lower = payload.free_text.toLowerCase();
+      if (lower.includes('tired') || lower.includes('exhaust') || lower.includes('drain') || lower.includes('fatigue')) detectedFeelings.push('Tired');
+      if (lower.includes('restless') || lower.includes('fidget') || lower.includes('tossing') || lower.includes('uneasy')) detectedFeelings.push('Restless');
+      if (lower.includes('anxious') || lower.includes('worry') || lower.includes('dread') || lower.includes('panic')) detectedFeelings.push('Anxious');
+      if (lower.includes('overwhelm') || lower.includes('swamped') || lower.includes('too much')) detectedFeelings.push('Overwhelmed');
+      if (lower.includes('calm') || lower.includes('peace') || lower.includes('grounded')) detectedFeelings.push('Calm');
+      if (lower.includes('grateful') || lower.includes('thankful')) detectedFeelings.push('Grateful');
+      if (lower.includes('focused') || lower.includes('clear')) detectedFeelings.push('Focused');
+      if (lower.includes('hopeful') || lower.includes('optimist')) detectedFeelings.push('Hopeful');
+    }
+
     // Fallback response with immediate crisis detection
     const mockResponse: CheckinResponse = {
       id: 'chk-' + Date.now(),
       user_id: 'usr-local-01',
+      idempotency_key,
       type: payload.type,
       mood_score: payload.mood_score,
       free_text: payload.free_text,
       tags: payload.tags || [],
+      trigger_category: payload.trigger_category,
+      trigger_categories: (payload.trigger_categories && payload.trigger_categories.length > 0)
+        ? payload.trigger_categories
+        : payload.trigger_category
+        ? [payload.trigger_category]
+        : [],
       created_at: new Date().toISOString(),
       stress_score: calculatedStress,
+      derived_stress_score: calculatedStress,
+      confidence: 1.0,
+      circadian_bucket: 'daytime',
       crisis_detected: isCrisis,
       crisis_payload: isCrisis ? OFFICIAL_CRISIS_PAYLOAD : null,
+      detected_feelings: detectedFeelings,
+      detected_feelings_confidence: detectedFeelings.length > 0 ? 0.85 : undefined,
+      detected_feelings_source: detectedFeelings.length > 0 ? 'local_rule' : undefined,
     };
 
     saveLocalCheckin(mockResponse);
     return mockResponse;
+  },
+
+  /**
+   * Check pacing window advisory to prevent anxious rumination loops
+   */
+  async getPacingStatus(userId: string = 'demo_user'): Promise<PacingStatus> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/checkins/pacing/check?user_id=${encodeURIComponent(userId)}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // Local fallback
+    }
+    const checkins = getLocalCheckins();
+    if (checkins.length > 0) {
+      const latest = checkins[0];
+      const elapsedMinutes = Math.max(1, Math.round((Date.now() - new Date(latest.created_at).getTime()) / 60000));
+      if (elapsedMinutes <= 45 && (latest.stress_score >= 65 || (latest.derived_stress_score ?? 0) >= 65)) {
+        return {
+          recent_checkin_exists: true,
+          soft_branch_recommended: true,
+          minutes_ago: elapsedMinutes,
+          recent_stress_score: latest.derived_stress_score ?? latest.stress_score,
+          advisory_copy: `You checked in ${elapsedMinutes} minutes ago. Your nervous system is still processing. Would you like to try a 2-minute grounding exercise instead, or note what shifted?`,
+        };
+      }
+    }
+    return {
+      recent_checkin_exists: false,
+      soft_branch_recommended: false,
+    };
   },
 
   /**
@@ -266,6 +355,39 @@ export const apiClient = {
   },
 
   /**
+   * Accept or update detected feelings for a checkin (adds to tags/factors attribution)
+   */
+  async updateCheckinFeelings(
+    checkinId: string,
+    feelings: string[]
+  ): Promise<CheckinResponse | null> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/checkins/${checkinId}/feelings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feelings }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const checkins = getLocalCheckins();
+        const updated = checkins.map((c) =>
+          c.id === checkinId ? { ...c, tags: Array.from(new Set([...(c.tags || []), ...feelings])) } : c
+        );
+        localStorage.setItem('sanctuary_v2_checkins', JSON.stringify(updated));
+        return data;
+      }
+    } catch {
+      // Non-blocking fallback
+    }
+    const checkins = getLocalCheckins();
+    const updated = checkins.map((c) =>
+      c.id === checkinId ? { ...c, tags: Array.from(new Set([...(c.tags || []), ...feelings])) } : c
+    );
+    localStorage.setItem('sanctuary_v2_checkins', JSON.stringify(updated));
+    return checkins.find((c) => c.id === checkinId) || null;
+  },
+
+  /**
    * Retrieve recent check-ins
    */
   async getRecentCheckins(): Promise<CheckinResponse[]> {
@@ -282,48 +404,108 @@ export const apiClient = {
   },
 
   /**
-   * Get stress index trend data (7-day or 30-day)
+   * Get calibrated stress indicator, confidence score, and deterministic contributing factors
    */
-  async getStressTrend(range: '7d' | '30d' = '7d'): Promise<StressTrendPoint[]> {
+  async getCalibratedIndicator(userId: string = 'demo_user', windowDays: number = 14): Promise<CalibratedIndicator> {
     try {
-      const res = await fetch(`${API_BASE_URL}/stress-index?range=${range}`);
+      const res = await fetch(
+        `${API_BASE_URL}/stress-index/indicators/current?user_id=${encodeURIComponent(userId)}&window_days=${windowDays}`
+      );
       if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) return data;
+        return await res.json();
+      }
+    } catch {
+      // Local fallback
+    }
+
+    const checkins = getLocalCheckins();
+    const distinctDates = new Set(checkins.map((c) => c.created_at.split('T')[0]));
+    const distinctDays = distinctDates.size;
+    const minNMet = distinctDays >= 7;
+
+    return {
+      user_id: userId,
+      status: distinctDays < 5 ? 'calibrating' : distinctDays < 7 ? 'preliminary' : 'calibrated',
+      current_score: checkins.length > 0 ? (checkins[0].derived_stress_score ?? checkins[0].stress_score) : 45.0,
+      confidence_score: Math.min(1.0, Math.round((distinctDays / 7.0) * 100) / 100),
+      effective_sample_size: distinctDays,
+      distinct_days: distinctDays,
+      minimum_n_met: minNMet,
+      trend_direction: minNMet ? 'stable' : null,
+      trend_slope: 0.0,
+      status_copy: distinctDays < 5
+        ? `Calibrating your baseline (Day ${distinctDays} of 5 distinct days)`
+        : distinctDays < 7
+        ? `Preliminary baseline (Day ${distinctDays} of 7 distinct days)`
+        : 'Calibrated baseline active',
+      contributing_factors: [],
+      recommended_action: {
+        technique: 'square_breathing',
+        title: '4-4-4-4 Box Breathing',
+        reason: 'Gentle baseline reset for your nervous system.',
+      },
+    };
+  },
+
+  /**
+   * Get longitudinal trends with honest minimum-N gating (eliminating synthetic sine-wave hallucinations)
+   */
+  async getLongitudinalTrends(
+    range: '7d' | '30d' = '7d',
+    userId: string = 'demo_user'
+  ): Promise<LongitudinalTrendResponse> {
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/stress-index/trends?user_id=${encodeURIComponent(userId)}&range=${range}`
+      );
+      if (res.ok) {
+        return await res.json();
       }
     } catch {
       // Fallback
     }
 
     const checkins = getLocalCheckins();
-    const days = range === '7d' ? 7 : 30;
-    const result: StressTrendPoint[] = [];
+    const days = range === '30d' ? 30 : 7;
+    const distinctDates = new Set(checkins.map((c) => c.created_at.split('T')[0]));
+    const distinctDays = distinctDates.size;
+    const points: StressTrendPoint[] = [];
 
     for (let i = days - 1; i >= 0; i--) {
       const dateObj = new Date(Date.now() - i * 86400000);
       const dateStr = dateObj.toISOString().split('T')[0];
       const dayCheckins = checkins.filter((c) => c.created_at.startsWith(dateStr));
 
-      let avgScore = 4.0;
+      let score = 0;
       if (dayCheckins.length > 0) {
-        const sum = dayCheckins.reduce((acc, c) => acc + c.stress_score, 0);
-        avgScore = Math.round((sum / dayCheckins.length) * 10) / 10;
-      } else {
-        // Natural gentle variation between 3.5 and 5.5 for calm representation
-        avgScore = 4 + Math.sin(i * 0.7) * 1.2;
-        avgScore = Math.round(avgScore * 10) / 10;
+        const sum = dayCheckins.reduce((acc, c) => acc + (c.derived_stress_score ?? c.stress_score), 0);
+        score = Math.round(sum / dayCheckins.length);
       }
 
-      const dayLabel = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
-      result.push({
+      points.push({
         date: dateStr,
-        score: avgScore,
+        score,
         checkinCount: dayCheckins.length,
-        label: dayLabel,
+        label: dateObj.toLocaleDateString('en-US', { weekday: 'short' }),
       });
     }
 
-    return result;
+    return {
+      user_id: userId,
+      range,
+      status: distinctDays < 5 ? 'calibrating' : distinctDays < 7 ? 'preliminary' : 'calibrated',
+      minimum_n_met: distinctDays >= 7,
+      distinct_days: distinctDays,
+      points,
+    };
+  },
+
+  /**
+   * Legacy StressTrend adapter normalized to 0-100 scale without synthetic sine waves
+   */
+  async getStressTrend(range: '7d' | '30d' = '7d'): Promise<StressTrendPoint[]> {
+    const trendResp = await this.getLongitudinalTrends(range);
+    return trendResp.points;
   },
 
   /**
@@ -368,6 +550,210 @@ export const apiClient = {
     };
     localStorage.setItem(STORAGE_KEYS.BASELINE, JSON.stringify(saved));
     return saved;
+  },
+
+  /**
+   * Fetch active questionnaire catalog (WHO-5 adapted well-being + somatic lifestyle items)
+   */
+  async getQuestionnaireCatalog(): Promise<QuestionnaireCatalog> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/baseline/catalog`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // Fallback
+    }
+    return {
+      baseline_anchor: {
+        scale_name: 'who5_adapted_v1',
+        scale_version: '2.0.0',
+        construct: 'Subjective Psychological Well-Being & Stress Baseline',
+        recall_window: 'over the last 2 weeks',
+        licensing: 'Public domain (CC BY-NC-SA 3.0 IGO) WHO Psychiatric Research Unit',
+        clinical_citation: 'Topp CW, et al. Psychother Psychosom 2015;84:167-176',
+        items: [
+          { id: 'who5_cheerful', prompt: 'I have felt cheerful and in good spirits', response_type: 'likert_6', scoring_direction: 'positive' },
+          { id: 'who5_calm', prompt: 'I have felt calm and relaxed', response_type: 'likert_6', scoring_direction: 'positive' },
+          { id: 'who5_active', prompt: 'I have felt active and vigorous', response_type: 'likert_6', scoring_direction: 'positive' },
+          { id: 'who5_rested', prompt: 'I woke up feeling fresh and rested', response_type: 'likert_6', scoring_direction: 'positive' },
+          { id: 'who5_interest', prompt: 'My daily life has been filled with things that interest me', response_type: 'likert_6', scoring_direction: 'positive' },
+        ],
+      },
+      somatic_profile: {
+        scale_name: 'somatic_lifestyle_v1',
+        items: [
+          { id: 'physical_manifestation', prompt: 'Where do you most notice tension settling physically?', response_type: 'single_choice', options: ['Head / temples', 'Jaw / clenching', 'Neck / shoulders', 'Chest / tight breathing', 'Stomach / digestion', 'Lower back', 'Hands / restless fidgeting', 'No specific physical manifestation'] },
+          { id: 'sleep_hours_typical', prompt: 'Typical sleep duration over the past two weeks', response_type: 'single_choice', options: ['Less than 5 hours', '5 to 6 hours', '6 to 7 hours', '7 to 8 hours', 'More than 8 hours'] },
+          { id: 'caffeine_daily_cups', prompt: 'Daily caffeinated beverages (coffee, tea, energy drinks)', response_type: 'single_choice', options: ['0 cups (none)', '1 to 2 cups', '3 to 4 cups', '5 or more cups'] },
+          { id: 'primary_stress_driver', prompt: 'Primary domain currently drawing your emotional bandwidth', response_type: 'single_choice', options: ['Work / career demands', 'Financial pressures', 'Relationship dynamics', 'Health & physical vitality', 'Sleep disruption', 'Social isolation / loneliness', 'Identity / personal direction'] },
+          { id: 'baseline_notes', prompt: 'Is there anything specific you are hoping to cultivate with Sanctuary?', response_type: 'free_text' },
+        ],
+      },
+      momentary_checkin: {
+        scale_name: 'ema_momentary_v1',
+        items: [
+          { id: 'momentary_mood', prompt: 'How does your nervous system feel right now?', response_type: 'slider_1_10' },
+          { id: 'momentary_tags', prompt: 'Which somatic sensations or states describe this moment?', response_type: 'tag_chips' },
+          { id: 'momentary_reflection', prompt: 'Brief reflection (optional)', response_type: 'free_text' },
+        ],
+        trigger_taxonomy: [
+          { category: 'work', label: 'Work', description: 'Deadlines, workload, meetings, career expectations' },
+          { category: 'financial', label: 'Financial', description: 'Expenses, budgeting, bills, investments' },
+          { category: 'relationship', label: 'Relationship', description: 'Partner, family dynamics, conflicts, boundaries' },
+          { category: 'health', label: 'Health', description: 'Illness, somatic pain, medical appointments, vitality' },
+          { category: 'sleep', label: 'Sleep', description: 'Insomnia, fragmented rest, fatigue, sleep debt' },
+          { category: 'social_loneliness', label: 'Social & Loneliness', description: 'Isolation, social battery depletion, disconnectedness' },
+          { category: 'identity', label: 'Identity', description: 'Purpose, personal values, life transitions, self-worth' },
+        ],
+      },
+    };
+  },
+
+  /**
+   * Submit baseline snapshot (Onboarding or periodic Day 14/30/60 recalibration)
+   */
+  async submitBaselineSnapshot(payload: {
+    user_id?: string;
+    scale_name?: string;
+    answers: Record<string, any>;
+    notes?: string;
+  }): Promise<BaselineSnapshot> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/baseline/snapshot`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: payload.user_id || 'demo_user',
+          scale_name: payload.scale_name || 'who5_adapted',
+          answers: payload.answers,
+          notes: payload.notes,
+        }),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // Fallback
+    }
+    const snap: BaselineSnapshot = {
+      id: 'snap-' + Date.now(),
+      user_id: payload.user_id || 'demo_user',
+      scale_name: payload.scale_name || 'who5_adapted',
+      scale_version: '2.0.0',
+      score_normalized: 35.0,
+      answers: payload.answers,
+      notes: payload.notes || null,
+      created_at: new Date().toISOString(),
+    };
+    return snap;
+  },
+
+  /**
+   * List longitudinal baseline snapshots
+   */
+  async getBaselineSnapshots(userId: string = 'demo_user'): Promise<BaselineSnapshot[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/baseline/snapshots?user_id=${encodeURIComponent(userId)}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // Fallback
+    }
+    return [];
+  },
+
+  /**
+   * Fetch active consent states and immutable audit trail
+   */
+  async getConsentStatus(userId: string = 'demo_user'): Promise<ConsentStatus> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/consent/status?user_id=${encodeURIComponent(userId)}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // Fallback
+    }
+    return {
+      user_id: userId,
+      active_consents: {
+        terms_and_privacy: true,
+        wearable_data: false,
+        anonymous_analytics: false,
+      },
+      history: [
+        {
+          consent_type: 'terms_and_privacy',
+          granted: true,
+          version: '2.0.0',
+          granted_at: new Date().toISOString(),
+          revoked_at: null,
+        },
+      ],
+    };
+  },
+
+  /**
+   * Grant specific consent in immutable audit log
+   */
+  async grantConsent(
+    consentType: string,
+    version: string = '2.0.0',
+    userId: string = 'demo_user'
+  ): Promise<ConsentItem> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/consent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          consent_type: consentType,
+          version,
+        }),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // Fallback
+    }
+    return {
+      consent_type: consentType,
+      granted: true,
+      version,
+      granted_at: new Date().toISOString(),
+      revoked_at: null,
+    };
+  },
+
+  /**
+   * Revoke specific consent in immutable audit log
+   */
+  async revokeConsent(consentType: string, userId: string = 'demo_user'): Promise<ConsentItem> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/consent/revoke`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          consent_type: consentType,
+        }),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // Fallback
+    }
+    return {
+      consent_type: consentType,
+      granted: false,
+      version: '2.0.0',
+      granted_at: new Date().toISOString(),
+      revoked_at: new Date().toISOString(),
+    };
   },
 
   /**
@@ -493,7 +879,7 @@ export const apiClient = {
   /**
    * Irreversible account & data deletion (Double opt-in)
    */
-  async deleteUserData(confirmation: string): Promise<{ success: boolean; message: string }> {
+  async deleteUserData(confirmation: string = 'DELETE'): Promise<{ success: boolean; message: string }> {
     if (confirmation !== 'DELETE') {
       throw new Error('Please type DELETE to confirm.');
     }
@@ -501,7 +887,7 @@ export const apiClient = {
       const res = await fetch(`${API_BASE_URL}/data/delete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ confirmation }),
+        body: JSON.stringify({ confirm: true, user_id: 'demo_user' }),
       });
       if (res.ok) {
         localStorage.clear();
@@ -515,6 +901,10 @@ export const apiClient = {
       success: true,
       message: 'All local and remote data has been permanently and irreversibly deleted.',
     };
+  },
+
+  async deleteUserAccount(): Promise<{ success: boolean; message: string }> {
+    return this.deleteUserData('DELETE');
   },
 
   /**

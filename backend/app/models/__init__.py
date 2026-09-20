@@ -25,8 +25,10 @@ class User(Base):
     data_retention_pref = Column(String(50), default="standard", nullable=False)
 
     baseline = relationship("BaselineProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    baseline_snapshots = relationship("BaselineSnapshot", back_populates="user", cascade="all, delete-orphan")
     checkins = relationship("Checkin", back_populates="user", cascade="all, delete-orphan")
     daily_scores = relationship("DailyStressIndex", back_populates="user", cascade="all, delete-orphan")
+    stress_trends = relationship("StressTrendsLongitudinal", back_populates="user", cascade="all, delete-orphan")
     relief_sessions = relationship("ReliefSession", back_populates="user", cascade="all, delete-orphan")
 
 class BaselineProfile(Base):
@@ -37,11 +39,27 @@ class BaselineProfile(Base):
 
     user = relationship("User", back_populates="baseline")
 
+class BaselineSnapshot(Base):
+    """Longitudinal Baseline Snapshot (Periodic Recalibration).
+    Modeled on WHO-5 Well-Being Index + Cohen Coping Self-Efficacy dimensions.
+    """
+    __tablename__ = "baseline_snapshots"
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    version = Column(String(50), default="2.0.0", nullable=False)
+    scale_name = Column(String(50), default="who5_adapted", nullable=False)
+    score_normalized = Column(Float, nullable=False) # 0.00 to 100.00
+    answers_json = Column(JSON, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+
+    user = relationship("User", back_populates="baseline_snapshots")
+
 class Checkin(Base):
     __tablename__ = "checkins"
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    type = Column(String(20), nullable=False) # 'morning', 'evening', 'manual'
+    idempotency_key = Column(String(36), unique=True, default=lambda: str(uuid.uuid4()), nullable=False, index=True)
+    type = Column(String(50), nullable=False) # Open label: 'morning', 'afternoon', 'evening', 'night', 'custom', 'manual'
     mood_score = Column(Integer, nullable=False) # 1 to 10
     free_text = Column(Text, nullable=True)
     emotional_tags = Column(JSON, nullable=True, default=list)
@@ -49,11 +67,55 @@ class Checkin(Base):
     # Stored as JSON list in SQLite; as vector(384) in Postgres via migration.
     # One embedding serves both trigger classification AND pgvector RAG retrieval.
     embedding = Column(JSON, nullable=True)
+    embedding_model_version = Column(String(50), default="all-MiniLM-L6-v2-v1", nullable=False)
+    questionnaire_version = Column(String(50), default="2.0.0", nullable=False)
+    scale_version = Column(String(50), default="2.0.0", nullable=False)
+    user_tz_offset_minutes = Column(Integer, default=0, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
 
     user = relationship("User", back_populates="checkins")
     relief_sessions = relationship("ReliefSession", back_populates="checkin")
     trigger_tags = relationship("TriggerTag", back_populates="checkin", cascade="all, delete-orphan")
+    features = relationship("CheckinFeaturesDerived", back_populates="checkin", uselist=False, cascade="all, delete-orphan")
+
+    @property
+    def trigger_categories(self) -> list:
+        if not self.trigger_tags:
+            return []
+        return [t.category for t in self.trigger_tags]
+
+class CheckinFeaturesDerived(Base):
+    """Per-checkin derived indicators & ML feature layer."""
+    __tablename__ = "checkin_features_derived"
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    checkin_id = Column(String(36), ForeignKey("checkins.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    derived_stress_score = Column(Float, nullable=False)
+    baseline_delta = Column(Float, nullable=True)
+    circadian_bucket = Column(String(20), default="day", nullable=False)
+    confidence = Column(Float, default=1.0, nullable=False)
+    model_version = Column(String(50), default="calibrated_v2", nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    checkin = relationship("Checkin", back_populates="features")
+
+class StressTrendsLongitudinal(Base):
+    """Calibrated rolling trends & minimum-N tracking."""
+    __tablename__ = "stress_trends_longitudinal"
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    date = Column(Date, nullable=False, index=True)
+    weighted_mean = Column(Float, nullable=False)
+    confidence = Column(Float, nullable=False)
+    n_eff = Column(Float, nullable=False)
+    distinct_days_count = Column(Integer, nullable=False)
+    trend_slope = Column(Float, nullable=True)
+    status = Column(String(20), default="calibrating", nullable=False) # 'calibrating', 'preliminary', 'calibrated'
+    contributing_factors_json = Column(JSON, default=list, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    user = relationship("User", back_populates="stress_trends")
+
 
 class DailyStressIndex(Base):
     __tablename__ = "stress_index_daily"

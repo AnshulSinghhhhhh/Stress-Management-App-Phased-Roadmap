@@ -185,3 +185,76 @@ Phase 2 has four distinct NLP jobs — they intentionally don't all use the same
 2. Weeks 4–7: Phase 1 features end-to-end, Stitch-designed UI implemented
 3. Weeks 8–9: Phase 1 hardening, crisis pathway safety review, soft launch
 4. Weeks 10+: begin Phase 2 only after Phase 1 success signal is observed in real usage data — do not build Phase 2 on a fixed calendar date, build it on the data-driven trigger the roadmap specifies
+
+---
+
+## 4. v2 Architecture Redesign: Validated-Scale Backbone, Longitudinal Data Model, Pacing & Calibrated Metrics
+
+### 4.1 Validated Backbone & Decoupled Architecture
+- **Periodic Baseline Anchor (Onboarding & Days 14, 30, 60)**:
+  - 5-item Subjective Well-Being & Stress Index (modeled on the WHO-5 and Cohen's Coping Self-Efficacy dimensions).
+  - Normalization: $0 - 100$ scale where $\text{Baseline Stress} = 100 - \text{WellBeing}_{\%}$.
+  - Stored in a new versioned table: `baseline_snapshots`.
+- **Daily / Momentary EMA (<15-second loop)**:
+  - Single-item stress slider (1–10) + pinned 7-trigger category chips (`work`, `financial`, `relationship`, `health`, `sleep`, `social_loneliness`, `identity`) + optional voice/text note.
+  - Derived stress score is mathematically calibrated against the user's rolling baseline anchor.
+- **Medical Disclaimer**:
+  - Presented explicitly as an *estimate informed by a validated instrument*, strictly **not** a clinical diagnosis.
+- **Commercial Licensing Reality**:
+  - PSS (Cohen / Mapi Research Trust / Mind Garden) is proprietary, requiring commercial licensing agreements, user fees, and mandatory electronic screenshot approval.
+  - WHO-5 copyright was transferred to the WHO in 2024 under CC BY-NC-SA 3.0 IGO, requiring explicit WHO Permissions clearance for commercial SaaS.
+
+### 4.2 Longitudinal Data Model & Storage Hierarchy
+- **Append-only check-in chain**: User → Check-in → Responses → Derived Features → Historical Trends → Personalized Feedback.
+- **Open-label `checkin_type`**: `checkin_type` becomes an open string (`morning`, `afternoon`, `evening`, `night`, `custom`, `manual`) serving purely as a UI hint. Zero daily count or uniqueness constraints in backend.
+- **Idempotency Guarantee**: `checkins.idempotency_key` (UUID UNIQUE) prevents duplicate check-in persistence under concurrent network conditions.
+- **Schema Separation**:
+  - `checkins`: User ID, timestamp, idempotency key, open-label type, free text, embedding.
+  - `checkin_features_derived`: Precomputed stress scores, variance deltas, model/version metadata.
+  - `stress_trends_longitudinal`: Rolling averages, effective sample sizes, trend slopes.
+  - `baseline_snapshots`: Versioned baseline assessments.
+
+### 4.3 Check-in Pacing & Mental Health UX
+- **No Hard Backend Blocking**: The API never rejects a check-in based on frequency.
+- **Session Refractory Period (45-Minute Soft Branch)**:
+  - If a check-in is initiated within 45 minutes of a prior check-in that scored high stress ($\ge 65/100$):
+  - Do not prompt for another 1–10 distress rating (prevents interoceptive rumination).
+  - Soft branch: *"You checked in recently — want to try a 2-minute grounding exercise instead, or note what shifted?"*
+- **Strict Anti-Streak Policy**:
+  - Streaks, fire emojis, and urgency copy ("don't break your streak") are prohibited.
+  - Replaced by **"Unhurried Presence"**: a monthly rolling presence calendar celebrating any visit without penalizing missed days.
+
+### 4.4 Calibrated Stress Indicator & Minimum-N Rule
+- **Exponential Recency Weighting**: Continuous half-life $\tau_{half} = 3.5\text{ days}$ (84 hours): $w_i = 2^{-\Delta t_i / \tau_{half}}$.
+- **Kish's Effective Sample Size ($N_{eff}$)**: $N_{eff} = (\sum w_i)^2 / \sum w_i^2$.
+- **Calibrated Confidence**: $C = \text{clamp}(1 - \text{MoE} / \Delta_{tol}, 0.0, 1.0)$ where $\Delta_{tol} = 12.5\text{ points}$.
+- **Minimum-N Thresholds ($D_{distinct}$)**:
+  - $D_{distinct} < 5$ days: Displays *"Calibrating baseline (Day D of 5)"*. Trend lines are suppressed.
+  - $D_{distinct} = 5–6$ days: Displays preliminary calibrated score with exploratory badge.
+  - $D_{distinct} \ge 7$ days: Unlocks full trend line, directionality arrow ($\pm \Delta$), and factor attribution (captures full weekly cycle).
+- **Deterministic Factor Attribution**:
+  - Factors traced strictly from pinned 7 categories using weighted frequency ($F_k$) and stress lift ($\Delta S_k = \max(0, \bar{S}_k - \bar{S}_{\neg k})$).
+  - Explanations are templated strings linked to evidence check-in IDs (zero LLM hallucinations).
+
+### 4.5 Target API Surface
+- `POST /api/v1/checkins`: Create check-in with `idempotency_key`, crisis evaluation, embedding, and trigger classification.
+- `GET /api/v1/checkins/history`: Paginated history with open-label filters.
+- `GET /api/v1/checkins/today`: Diurnal trajectory for today without overwriting.
+- `GET /api/v1/stress/indicators/current`: Current status, calibrated confidence, and recommended somatic action.
+- `GET /api/v1/stress/trends`: Moving trends with $D_{distinct}$ minimum-N gating.
+- `GET /api/v1/insights/personalized`: Deterministic root-cause attribution with evidence check-in references.
+- `GET /api/v1/questionnaires/active`: Active baseline and scale questions.
+- `GET /api/v1/consent/status`, `POST /api/v1/consent`, `POST /api/v1/consent/revoke`: Revisitable consent audit trail.
+- `GET /api/v1/users/preferences`, `PATCH /api/v1/users/preferences`: Pacing and privacy settings.
+
+### 4.6 Log of Documented Decision Changes
+
+| Topic | Previous Documented Decision | v2 Redesign Decision | Architectural & Clinical Rationale |
+| :--- | :--- | :--- | :--- |
+| **Check-in Limit & Type** | Strict ENUM (`morning`, `evening`, `manual`). Two daily check-in slots client-side. | Open string label with UI hints (`morning`, `afternoon`, `evening`, `night`, `custom`, `manual`). Unlimited check-ins allowed. | Removes artificial limit; supports flexible real-world check-ins without DB migrations. |
+| **Daily Stress Aggregation** | `stress_index_daily` keyed by `(user_id, date)`, overwriting intraday entries. | Check-in features separated from longitudinal trends. | Preserves diurnal morning/evening variance. |
+| **Stress Calculation** | Naive linear inversion: `(10 - mood) * 11.11`. | Recency-weighted exponential decay with Kish $N_{eff}$ and calibrated confidence. | Provides mathematically honest confidence based on actual data sufficiency. |
+| **Trend Gating** | Plotted all available points (or synthesized fake sine waves when missing). | Minimum-N rule ($D_{distinct} \ge 7$). Displays explicit "Calibrating baseline" when below threshold. | Eliminates misleading trend lines; truthful mental health UX. |
+| **Baseline Storage** | Single static row in `baseline_profile` (PK `user_id`); updates blocked. | Versioned `baseline_snapshots` table. | Enables longitudinal baseline tracking and periodic recalibration. |
+| **Consent Management** | Disconnected `consent_log` table; zero endpoints and zero UI. | Full `/consent/*` API surface and revisitable settings card in `SettingsPage.tsx`. | Closes regulatory and privacy gap (DPDP Act & GDPR compliance). |
+| **Trigger Tagging Bug** | Frontend made secondary POST call to `/triggers/{id}/correct`. | Single transactional tagging within `create_checkin`; redundant call removed. | Eliminates duplicate `TriggerTag` rows. |

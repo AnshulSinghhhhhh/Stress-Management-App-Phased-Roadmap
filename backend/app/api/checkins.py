@@ -1,23 +1,28 @@
-"""Router: Daily checkins (morning, evening, manual) and stress evaluation.
-Phase 2 §2.0: Automatically computes embedding and trigger tags on each check-in.
-"""
-from typing import Optional, List
+import uuid
+import logging
+from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone, timedelta, time
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.models import Checkin, DailyStressIndex, CrisisEvent, TriggerTag, User, utc_now
-from app.schemas import CheckinCreate, CheckinResponse, VALID_TRIGGER_CATEGORIES
+from app.models import (
+    Checkin, DailyStressIndex, CrisisEvent, TriggerTag,
+    CheckinFeaturesDerived, User, utc_now
+)
+from app.schemas import CheckinCreate, CheckinResponse, CheckinFeelingsUpdate, VALID_TRIGGER_CATEGORIES
 from app.services.crisis_detector import crisis_detector
 from app.services.stress_index import aggregate_daily_stress
+from app.services.calibrated_stress import (
+    compute_raw_stress_score, get_circadian_bucket
+)
 from app.core.config import settings
-import logging
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/checkins", tags=["Checkins"])
 
 IDEMPOTENCY_WINDOW_SECONDS = 5
+PACING_WINDOW_MINUTES = 45
 
 def ensure_user_exists(db: Session, user_id: str) -> User:
     user = db.query(User).filter(User.id == user_id).first()
@@ -26,7 +31,7 @@ def ensure_user_exists(db: Session, user_id: str) -> User:
             id=user_id,
             email=f"{user_id}@example.com" if "@" not in user_id else user_id,
             locale="en",
-            consent_version_accepted="1.0.0",
+            consent_version_accepted="2.0.0",
             data_retention_pref="standard"
         )
         db.add(user)
@@ -34,25 +39,83 @@ def ensure_user_exists(db: Session, user_id: str) -> User:
         db.refresh(user)
     return user
 
+@router.get("/pacing/check")
+def check_pacing_status(
+    user_id: str = Query("demo_user"),
+    db: Session = Depends(get_db)
+):
+    """Pacing check: returns soft branch advisory if user logged elevated stress recently.
+    Per Step 6: Backend never blocks; this provides gentle UI guidance to prevent rumination.
+    """
+    now = utc_now()
+    cutoff = now - timedelta(minutes=PACING_WINDOW_MINUTES)
+    recent = (
+        db.query(Checkin)
+        .filter(Checkin.user_id == user_id, Checkin.created_at >= cutoff)
+        .order_by(Checkin.created_at.desc())
+        .first()
+    )
+
+    if not recent:
+        return {"recent_checkin_exists": False, "soft_branch_recommended": False}
+
+    recent_stress = compute_raw_stress_score(recent.mood_score, recent.emotional_tags)
+    recent_created = recent.created_at
+    if recent_created.tzinfo is None and now.tzinfo is not None:
+        recent_created = recent_created.replace(tzinfo=timezone.utc)
+    elif recent_created.tzinfo is not None and now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    minutes_ago = max(1, int((now - recent_created).total_seconds() / 60))
+
+    soft_branch = (recent_stress >= 65.0)
+    return {
+        "recent_checkin_exists": True,
+        "minutes_ago": minutes_ago,
+        "recent_mood_score": recent.mood_score,
+        "recent_stress_score": recent_stress,
+        "soft_branch_recommended": soft_branch,
+        "advisory_copy": (
+            f"You checked in {minutes_ago} minute{'s' if minutes_ago > 1 else ''} ago. "
+            "Your nervous system is still processing. Would you like to try a 2-minute grounding exercise instead, or note what shifted?"
+        ) if soft_branch else None
+    }
+
 @router.post("", response_model=CheckinResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=CheckinResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 def create_checkin(
     payload: CheckinCreate,
     db: Session = Depends(get_db)
 ):
-    """Create a new check-in (morning, evening, or manual).
+    """Create a new check-in (open-label type).
     0. Evaluates idempotency: rejects identical submission from same user within window.
     1. Synchronously evaluates crisis patterns in free_text (<50ms).
     2. If crisis detected, immediately creates an immutable CrisisEvent.
-    3. Persists check-in with embedding (Phase 2 §2.0).
+    3. Persists check-in with idempotency_key, metadata, and embedding.
     4. Auto-classifies trigger taxonomy if free_text is present.
-    5. Recalculates today's daily stress score and upserts stress_index_daily.
-    6. Returns check-in with optional crisis_response and daily_stress_score.
+    5. Stores derived feature record in checkin_features_derived.
+    6. Recalculates today's daily stress score and upserts stress_index_daily.
+    7. Returns check-in with crisis_response, daily_stress_score, and derived_stress_score.
     """
     user_id = payload.user_id or "demo_user"
     ensure_user_exists(db, user_id)
 
-    # 0. Idempotency safeguard: reject identical submission from same user within window
+    # 0. Idempotency safeguard: check explicit idempotency_key if supplied
+    if payload.idempotency_key:
+        existing_by_key = (
+            db.query(Checkin)
+            .filter(
+                Checkin.user_id == user_id,
+                Checkin.idempotency_key == payload.idempotency_key
+            )
+            .first()
+        )
+        if existing_by_key:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Duplicate check-in detected. An identical check-in was recently submitted.",
+            )
+
+    # Reject identical submission from same user within 5s window
     now = utc_now()
     cutoff = now - timedelta(seconds=IDEMPOTENCY_WINDOW_SECONDS)
     recent_checkins = (
@@ -104,7 +167,6 @@ def create_checkin(
         db.commit()
 
     # 2. Compute embedding for free_text (Phase 2 §2.0)
-    # One embedding serves both trigger classification AND pgvector RAG retrieval.
     embedding = None
     if payload.free_text and payload.free_text.strip():
         try:
@@ -113,20 +175,43 @@ def create_checkin(
         except Exception as e:
             logger.warning("Embedding computation failed (non-blocking): %s", e)
 
-    # 3. Persist check-in
+    # 3. Persist check-in with v2 metadata
     now = utc_now()
+    checkin_key = payload.idempotency_key or str(uuid.uuid4())
+    bucket = get_circadian_bucket(now, payload.user_tz_offset_minutes or 0)
+    derived_score = compute_raw_stress_score(payload.mood_score, payload.emotional_tags)
+
     checkin = Checkin(
         user_id=user_id,
+        idempotency_key=checkin_key,
         type=payload.type,
         mood_score=payload.mood_score,
         free_text=payload.free_text,
         emotional_tags=payload.emotional_tags or [],
         embedding=embedding,
+        embedding_model_version="all-MiniLM-L6-v2-v1",
+        questionnaire_version="2.0.0",
+        scale_version="2.0.0",
+        user_tz_offset_minutes=payload.user_tz_offset_minutes or 0,
         created_at=now
     )
     db.add(checkin)
     db.commit()
     db.refresh(checkin)
+
+    # 3b. Persist CheckinFeaturesDerived
+    features = CheckinFeaturesDerived(
+        checkin_id=checkin.id,
+        user_id=user_id,
+        derived_stress_score=derived_score,
+        circadian_bucket=bucket,
+        confidence=1.0,
+        model_version="calibrated_v2",
+        created_at=now
+    )
+    db.add(features)
+    db.commit()
+
 
     # 4. Auto-classify trigger taxonomy or persist user-selected trigger tag (Phase 2 §2.0)
     # Per guardrail: this must NEVER fail or block the check-in response.
@@ -208,6 +293,27 @@ def create_checkin(
             logger.warning("Deeper probing generation failed (fail-open): %s", e)
             probing_question = None
 
+    # 5b. Feeling tone detection from free_text (v2.2 Objective 2)
+    # Scope: TEXT ONLY (transcribed voice or typed). Fail-safe, non-blocking, zero impact on stress formula.
+    detected_feelings = []
+    detected_feelings_confidence = None
+    detected_feelings_source = None
+    if payload.free_text and payload.free_text.strip():
+        try:
+            from app.services.feeling_classifier import classify_feelings
+            feelings_res = classify_feelings(
+                text=payload.free_text,
+                embedding=embedding,
+                nim_api_key=settings.NVIDIA_API_KEY,
+                nim_base_url=settings.NVIDIA_BASE_URL,
+                nim_model=settings.NVIDIA_MODEL,
+            )
+            detected_feelings = feelings_res.get("detected_feelings", [])
+            detected_feelings_confidence = feelings_res.get("confidence")
+            detected_feelings_source = feelings_res.get("source")
+        except Exception as e:
+            logger.warning("Feeling classification failed (non-blocking): %s", e)
+
     # 6. Recalculate daily stress index for today
     today_date = now.date()
     start_of_day = datetime(today_date.year, today_date.month, today_date.day, 0, 0, 0, tzinfo=timezone.utc)
@@ -255,6 +361,7 @@ def create_checkin(
     return CheckinResponse(
         id=checkin.id,
         user_id=checkin.user_id,
+        idempotency_key=checkin.idempotency_key,
         type=checkin.type,
         mood_score=checkin.mood_score,
         free_text=checkin.free_text,
@@ -262,16 +369,67 @@ def create_checkin(
         created_at=checkin.created_at,
         crisis_response=crisis_response,
         daily_stress_score=daily_score,
-        probing_question=probing_question
+        derived_stress_score=derived_score,
+        confidence=1.0,
+        circadian_bucket=bucket,
+        probing_question=probing_question,
+        detected_feelings=detected_feelings,
+        detected_feelings_confidence=detected_feelings_confidence,
+        detected_feelings_source=detected_feelings_source,
+        trigger_categories=user_cats,
     )
 
+@router.patch("/{checkin_id}/feelings", response_model=CheckinResponse)
+def update_checkin_feelings(
+    checkin_id: str,
+    payload: CheckinFeelingsUpdate,
+    user_id: str = "demo_user",
+    db: Session = Depends(get_db)
+):
+    """Accept or update detected feelings for a checkin. Adds to emotional_tags without altering calibrated stress calculation formula."""
+    chk = db.query(Checkin).filter(Checkin.id == checkin_id, Checkin.user_id == user_id).first()
+    if not chk:
+        raise HTTPException(status_code=404, detail="Checkin not found")
+
+    current_tags = list(chk.emotional_tags or [])
+    for f in payload.feelings:
+        if f not in current_tags:
+            current_tags.append(f)
+    chk.emotional_tags = current_tags
+    db.commit()
+    db.refresh(chk)
+    return chk
+
+@router.get("/today", response_model=List[CheckinResponse])
+def get_todays_checkins(
+    user_id: str = "demo_user",
+    db: Session = Depends(get_db)
+):
+    """Fetch today's check-ins for the user preserving diurnal sequence."""
+    now = utc_now()
+    today_date = now.date()
+    start_of_day = datetime(today_date.year, today_date.month, today_date.day, 0, 0, 0, tzinfo=timezone.utc)
+    end_of_day = datetime(today_date.year, today_date.month, today_date.day, 23, 59, 59, 999999, tzinfo=timezone.utc)
+
+    return (
+        db.query(Checkin)
+        .filter(
+            Checkin.user_id == user_id,
+            Checkin.created_at >= start_of_day,
+            Checkin.created_at <= end_of_day
+        )
+        .order_by(Checkin.created_at.asc())
+        .all()
+    )
+
+@router.get("/history", response_model=List[CheckinResponse])
 @router.get("", response_model=List[CheckinResponse])
 @router.get("/", response_model=List[CheckinResponse], include_in_schema=False)
 def list_checkins(
     user_id: str = "demo_user",
     limit: int = Query(50, ge=1, le=500),
     range: Optional[str] = Query(None, description="'7d', '30d', or null for all"),
-    type: Optional[str] = Query(None, description="Filter by 'morning', 'evening', or 'manual'"),
+    type: Optional[str] = Query(None, description="Filter by open label e.g. 'morning', 'evening', 'manual'"),
     db: Session = Depends(get_db)
 ):
     """List check-ins for user, ordered newest first."""
@@ -289,3 +447,4 @@ def list_checkins(
 
     checkins = query.order_by(Checkin.created_at.desc()).limit(limit).all()
     return checkins
+

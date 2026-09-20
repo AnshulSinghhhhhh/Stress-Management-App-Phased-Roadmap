@@ -237,3 +237,25 @@ def test_evening_checkin_creates_user_corrected_trigger_tag_and_appends_example(
     assert tag.confidence == 1.0
 
 
+def test_checkin_multi_select_trigger_categories(client, db_session):
+    """v2.3 Bug Fix A1: Multiple trigger categories can be selected and persisted simultaneously."""
+    user_id = "test_user_multi_triggers"
+    payload = {
+        "user_id": user_id,
+        "type": "morning",
+        "mood_score": 6,
+        "trigger_categories": ["work", "sleep"],
+        "emotional_tags": ["Tired", "Restless"]
+    }
+    resp = client.post("/checkins", json=payload)
+    assert resp.status_code == 201
+    data = resp.json()
+    checkin_id = data["id"]
+    assert "work" in data["trigger_categories"]
+    assert "sleep" in data["trigger_categories"]
+
+    tags = db_session.query(TriggerTag).filter(TriggerTag.checkin_id == checkin_id).all()
+    categories = [t.category for t in tags]
+    assert "work" in categories
+    assert "sleep" in categories
+    assert len(tags) == 2

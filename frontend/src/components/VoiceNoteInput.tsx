@@ -9,7 +9,6 @@ interface VoiceNoteInputProps {
   placeholder?: string;
 }
 
-// Typing for Web Speech API
 interface IWindow extends Window {
   SpeechRecognition?: any;
   webkitSpeechRecognition?: any;
@@ -18,8 +17,8 @@ interface IWindow extends Window {
 export const VoiceNoteInput: React.FC<VoiceNoteInputProps> = ({
   value,
   onChange,
-  title = 'Gentle reflection',
-  subtitle = 'Optional voice note or words',
+  title = 'Voice Note & Free Text',
+  subtitle = 'Optional voice memo or written context',
   placeholder = 'Take your time to write any thoughts here... (optional)',
 }) => {
   const [isRecording, setIsRecording] = useState(false);
@@ -112,23 +111,15 @@ export const VoiceNoteInput: React.FC<VoiceNoteInputProps> = ({
 
   return (
     <section className="bg-surfaceLowest border border-outline-variant rounded-2xl p-6 shadow-resting space-y-5">
-      {/* Header and Pacing Indicator */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-headline text-lg text-on-surface font-medium">
+          <h3 className="font-headline text-lg text-on-surface font-semibold">
             {title}
           </h3>
-          <p className="text-xs text-on-surface-variant">
+          <p className="text-sm text-stone-700">
             {subtitle}
           </p>
-        </div>
-
-        {/* Breathing Rhythm Indicator */}
-        <div className="flex items-center space-x-2 text-outline text-xs">
-          <div className="w-3.5 h-3.5 rounded-full bg-secondary-container flex items-center justify-center animate-breathe">
-            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-          </div>
-          <span>Paced rhythm</span>
         </div>
       </div>
 
@@ -138,15 +129,15 @@ export const VoiceNoteInput: React.FC<VoiceNoteInputProps> = ({
           type="button"
           onClick={toggleRecording}
           aria-label={isRecording ? 'Stop voice recording' : 'Start voice note recording'}
-          className={`w-full sm:w-auto inline-flex items-center justify-center space-x-2.5 px-4 py-2 rounded-full border text-sm font-medium transition-all duration-200 ${
+          className={`w-full sm:w-auto inline-flex items-center justify-center space-x-2.5 px-4 py-2 rounded-full border text-sm font-semibold transition-all duration-200 ${
             isRecording
-              ? 'bg-terracotta-container text-terracotta border-terracotta/40 animate-pulse'
-              : 'bg-surfaceLowest border-outline-variant hover:border-primary text-on-surface hover:shadow-sm'
+              ? 'bg-terracotta-container text-terracotta-dark border-terracotta/40 animate-pulse'
+              : 'bg-surfaceLowest border-outline-variant hover:border-primary text-on-surface hover:shadow-xs'
           }`}
         >
           {isRecording ? (
             <>
-              <MicOff className="w-4 h-4 text-terracotta" />
+              <MicOff className="w-4 h-4 text-terracotta-dark" />
               <span>Listening... Tap to finish</span>
             </>
           ) : (
@@ -170,27 +161,27 @@ export const VoiceNoteInput: React.FC<VoiceNoteInputProps> = ({
       </div>
 
       {recognitionError && (
-        <div className="flex items-center space-x-2 text-xs text-terracotta bg-terracotta-container/50 px-3 py-2 rounded-lg border border-terracotta/20">
-          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+        <div className="flex items-center space-x-2 text-sm text-terracotta-dark bg-terracotta-container/60 px-3.5 py-2.5 rounded-xl border border-terracotta/30">
+          <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{recognitionError}</span>
         </div>
       )}
 
-      {/* Distraction-Free Textarea */}
-      <div className="relative">
+      {/* Textarea */}
+      <div className="relative space-y-1.5">
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          rows={4}
-          className="w-full rounded-xl bg-surface border border-outline-variant p-4 text-sm md:text-base text-on-surface placeholder:text-outline/70 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 resize-none transition-colors duration-200"
+          rows={3}
+          className="w-full rounded-xl bg-surface border border-outline-variant p-4 text-sm md:text-base text-on-surface placeholder:text-stone-700 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 resize-none transition-colors duration-200"
         />
-        <div className="flex justify-between items-center pt-2 px-1 text-xs text-on-surface-variant">
-          <span className="flex items-center space-x-1">
-            <Lock className="w-3 h-3 text-outline" />
-            <span>Saved locally on your device</span>
+        <div className="flex justify-between items-center px-1 text-sm text-stone-700">
+          <span className="flex items-center space-x-1.5">
+            <Lock className="w-4 h-4 text-primary" />
+            <span>Encrypted locally on device</span>
           </span>
-          <span className="text-outline">Words are purely for you</span>
+          <span className="text-stone-700 font-medium">Text only analysis</span>
         </div>
       </div>
     </section>

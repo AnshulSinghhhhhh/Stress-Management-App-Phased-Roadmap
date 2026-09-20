@@ -69,3 +69,7 @@ A phase is "done" only when:
 - Render's free web service spins down after ~15 minutes idle — the first request after a period of inactivity will be slow (10–30s cold start). If demoing live, hit the health-check endpoint a minute beforehand to warm it up.
 - NVIDIA NIM's free tier has no published SLA and a per-minute rate limit — don't build any critical-path logic (especially the crisis pathway's primary detection) that assumes it's always available or fast.
 - The Stitch MCP server is still evolving — some UI patterns may not translate perfectly; budget manual agent-guided touch-ups for complex interactions (e.g. the guided-breathing timer animation) rather than expecting one-shot fidelity.
+
+"complete" report must include screenshots for any UI-touching task, and that pytest/build passing is never sufficient proof of a visual change
+
+QA gate needs an explicit "minimum text size" and "contrast ratio" checklist item, because three passes in, pytest + tsc build + a generic "0 design defects" have now let a readability spec violation through twice. That's worth closing at the process level so a fourth pass doesn't have the same gap.

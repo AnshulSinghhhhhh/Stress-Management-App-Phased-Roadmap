@@ -107,6 +107,14 @@ export const BaselineOnboarding: React.FC<BaselineOnboardingProps> = ({ onComple
       setIsSaving(true);
       try {
         const saved = await apiClient.saveBaseline(answers);
+        try {
+          await apiClient.submitBaselineSnapshot({
+            scale_name: 'who5_adapted',
+            answers,
+          });
+        } catch (snapErr) {
+          console.warn('Baseline snapshot sync:', snapErr);
+        }
         setProfile(saved);
         setIsDone(true);
         if (onComplete) onComplete();
@@ -137,11 +145,11 @@ export const BaselineOnboarding: React.FC<BaselineOnboardingProps> = ({ onComple
             <CheckCircle2 className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="font-headline text-xl font-medium text-on-surface">
+            <h2 className="font-headline text-xl font-semibold text-on-surface">
               Baseline Profile Active
             </h2>
-            <p className="text-xs text-on-surface-variant">
-              Encrypted &amp; calibrated for your personal nervous system baseline.
+            <p className="text-sm text-stone-700">
+              Encrypted &amp; calibrated for your personal baseline.
             </p>
           </div>
         </div>
@@ -153,8 +161,8 @@ export const BaselineOnboarding: React.FC<BaselineOnboardingProps> = ({ onComple
               className="p-4 rounded-2xl bg-surface-container-low border border-outline-variant/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
             >
               <div className="space-y-0.5">
-                <span className="text-xs text-outline font-medium">{q.prompt}</span>
-                <p className="text-sm font-semibold text-primary">
+                <span className="text-sm text-stone-700 font-medium">{q.prompt}</span>
+                <p className="text-sm font-semibold text-primary-dark">
                   {answers[q.id] || 'Not specified'}
                 </p>
               </div>
@@ -163,16 +171,16 @@ export const BaselineOnboarding: React.FC<BaselineOnboardingProps> = ({ onComple
         </div>
 
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-outline-variant/60">
-          <span className="text-xs text-on-surface-variant flex items-center space-x-1.5">
-            <Shield className="w-3.5 h-3.5 text-primary" />
+          <span className="text-sm text-stone-700 flex items-center space-x-1.5">
+            <Shield className="w-4 h-4 text-primary" />
             <span>Never shared with advertisers or third parties.</span>
           </span>
           <button
             type="button"
             onClick={handleRetake}
-            className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-full bg-surface-container text-on-surface hover:bg-surface-container/80 transition-colors text-xs font-medium border border-outline-variant"
+            className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-full bg-surface-container text-on-surface hover:bg-surface-container/80 transition-colors text-sm font-semibold border border-outline-variant"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            <RefreshCw className="w-4 h-4" />
             <span>Update Baseline Answers</span>
           </button>
         </div>
@@ -185,17 +193,17 @@ export const BaselineOnboarding: React.FC<BaselineOnboardingProps> = ({ onComple
       {/* Progress Header */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-secondary-container/60 text-primary text-xs font-medium">
-            <Sparkles className="w-3 h-3" />
-            <span>Sanctuary Baseline Onboarding</span>
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-secondary-container/60 text-primary-dark text-sm font-semibold">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Sanctuary Baseline Assessment</span>
           </div>
-          <span className="text-xs font-medium text-outline">
+          <span className="text-sm font-medium text-stone-700">
             Question {currentIndex + 1} of {BASELINE_QUESTIONS.length}
           </span>
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
+        <div className="w-full h-2 bg-surface-container rounded-full overflow-hidden">
           <div
             className="h-full bg-primary transition-all duration-300"
             style={{
@@ -207,10 +215,10 @@ export const BaselineOnboarding: React.FC<BaselineOnboardingProps> = ({ onComple
 
       {/* Question Prompt */}
       <div className="space-y-2 pt-2">
-        <h2 className="font-headline text-2xl font-medium text-on-surface tracking-tight">
+        <h2 className="font-headline text-2xl font-semibold text-on-surface tracking-tight">
           {currentQ.prompt}
         </h2>
-        <p className="text-sm text-on-surface-variant leading-relaxed">
+        <p className="text-sm text-stone-700 leading-relaxed">
           {currentQ.subtext}
         </p>
       </div>
@@ -230,7 +238,7 @@ export const BaselineOnboarding: React.FC<BaselineOnboardingProps> = ({ onComple
                   : 'bg-surfaceLowest border-outline-variant hover:border-primary hover:bg-surface-container-low text-on-surface'
               }`}
             >
-              <span className="text-sm font-medium">{opt}</span>
+              <span className="text-sm font-semibold">{opt}</span>
               <div
                 className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
                   isSelected ? 'border-primary bg-primary' : 'border-outline-variant'
@@ -249,10 +257,10 @@ export const BaselineOnboarding: React.FC<BaselineOnboardingProps> = ({ onComple
           type="button"
           onClick={handleBack}
           disabled={currentIndex === 0}
-          className={`inline-flex items-center space-x-1.5 text-xs font-medium px-4 py-2 rounded-full transition-colors ${
+          className={`inline-flex items-center space-x-1.5 text-sm font-semibold px-4 py-2 rounded-full transition-colors ${
             currentIndex === 0
               ? 'opacity-0 pointer-events-none'
-              : 'text-on-surface-variant hover:text-on-surface'
+              : 'text-stone-700 hover:text-on-surface'
           }`}
         >
           <ArrowLeft className="w-4 h-4" />
@@ -263,7 +271,7 @@ export const BaselineOnboarding: React.FC<BaselineOnboardingProps> = ({ onComple
           type="button"
           onClick={handleNext}
           disabled={!selectedOption || isSaving}
-          className="inline-flex items-center space-x-2 px-6 py-2.5 rounded-full bg-primary hover:bg-primary-dark text-white text-xs sm:text-sm font-medium transition-all shadow-sm active:scale-95 disabled:opacity-40"
+          className="inline-flex items-center space-x-2 px-6 py-2.5 rounded-full bg-primary hover:bg-primary-dark text-white text-sm font-semibold transition-all shadow-xs active:scale-95 disabled:opacity-40"
         >
           <span>
             {currentIndex === BASELINE_QUESTIONS.length - 1

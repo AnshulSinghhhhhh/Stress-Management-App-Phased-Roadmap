@@ -174,10 +174,10 @@ export const ReliefTimer: React.FC<ReliefTimerProps> = ({
             {techniqueId === 'square_breathing' && (
               <div className="w-full flex flex-col items-center space-y-6">
                 <div className="space-y-1">
-                  <span className="text-xs uppercase tracking-widest text-primary font-semibold px-3 py-1 bg-secondary-container/50 rounded-full">
+                  <span className="text-sm uppercase tracking-wider text-primary-dark font-semibold px-3.5 py-1 bg-secondary-container/60 rounded-full">
                     Cycle {cyclesCompleted + 1} of 4
                   </span>
-                  <h2 id="relief-title" className="font-headline text-2xl font-medium text-on-surface pt-2">
+                  <h2 id="relief-title" className="font-headline text-2xl font-semibold text-on-surface pt-2">
                     4-4-4-4 Box Breathing
                   </h2>
                   <p className="text-sm text-on-surface-variant">
@@ -241,10 +241,10 @@ export const ReliefTimer: React.FC<ReliefTimerProps> = ({
             {techniqueId === 'grounding_54321' && (
               <div className="w-full flex flex-col items-center space-y-6">
                 <div className="space-y-1">
-                  <span className="text-xs uppercase tracking-widest text-primary font-semibold px-3 py-1 bg-secondary-container/50 rounded-full">
+                  <span className="text-sm uppercase tracking-wider text-primary-dark font-semibold px-3.5 py-1 bg-secondary-container/60 rounded-full">
                     Step {groundingStepIndex + 1} of 5
                   </span>
-                  <h2 id="relief-title" className="font-headline text-2xl font-medium text-on-surface pt-2">
+                  <h2 id="relief-title" className="font-headline text-2xl font-semibold text-on-surface pt-2">
                     5-4-3-2-1 Sensory Grounding
                   </h2>
                   <p className="text-sm text-on-surface-variant">
@@ -282,26 +282,26 @@ export const ReliefTimer: React.FC<ReliefTimerProps> = ({
             {techniqueId === 'somatic_pause' && (
               <div className="w-full flex flex-col items-center space-y-6">
                 <div className="space-y-1">
-                  <span className="text-xs uppercase tracking-widest text-primary font-semibold px-3 py-1 bg-secondary-container/50 rounded-full">
+                  <span className="text-sm uppercase tracking-wider text-primary-dark font-semibold px-3.5 py-1 bg-secondary-container/60 rounded-full">
                     Minute {somaticStepIndex + 1} of 3
                   </span>
-                  <h2 id="relief-title" className="font-headline text-2xl font-medium text-on-surface pt-2">
+                  <h2 id="relief-title" className="font-headline text-2xl font-semibold text-on-surface pt-2">
                     3-Minute Somatic Pause
                   </h2>
-                  <p className="text-sm text-on-surface-variant">
+                  <p className="text-sm text-stone-700">
                     Progressive gentle neuromuscular release
                   </p>
                 </div>
 
                 {/* Step Focus */}
                 <div className="w-full bg-surface-container-low border border-outline-variant rounded-2xl p-6 text-center space-y-3">
-                  <h3 className="font-headline text-xl font-medium text-primary">
+                  <h3 className="font-headline text-xl font-bold text-primary-dark">
                     {somaticSteps[somaticStepIndex].title}
                   </h3>
-                  <p className="text-base text-on-surface-variant leading-relaxed max-w-md mx-auto">
+                  <p className="text-base text-stone-700 leading-relaxed max-w-md mx-auto">
                     {somaticSteps[somaticStepIndex].guidance}
                   </p>
-                  <div className="pt-2 font-mono text-2xl font-medium text-on-surface">
+                  <div className="pt-2 font-mono text-2xl font-semibold text-on-surface">
                     {somaticSecondsLeft}s remaining
                   </div>
                 </div>
@@ -310,7 +310,7 @@ export const ReliefTimer: React.FC<ReliefTimerProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsActive(!isActive)}
-                    className="px-5 py-2.5 rounded-full bg-surface-container text-on-surface hover:bg-surface-container/80 transition-colors font-medium text-sm border border-outline-variant inline-flex items-center space-x-2"
+                    className="px-5 py-2.5 rounded-full bg-surface-container text-on-surface hover:bg-surface-container/80 transition-colors font-semibold text-sm border border-outline-variant inline-flex items-center space-x-2"
                   >
                     {isActive ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                     <span>{isActive ? 'Pause' : 'Resume'}</span>
@@ -325,7 +325,7 @@ export const ReliefTimer: React.FC<ReliefTimerProps> = ({
                         setIsCompleted(true);
                       }
                     }}
-                    className="px-5 py-2.5 rounded-full bg-primary text-white hover:bg-primary-dark transition-colors font-medium text-sm"
+                    className="px-5 py-2.5 rounded-full bg-primary text-white hover:bg-primary-dark transition-colors font-semibold text-sm"
                   >
                     Next Area
                   </button>
@@ -336,22 +336,22 @@ export const ReliefTimer: React.FC<ReliefTimerProps> = ({
         ) : (
           /* Completion & Pre/Post Self-Reported Relief Rating */
           <div className="w-full flex flex-col items-center space-y-6 py-2">
-            <div className="w-14 h-14 rounded-full bg-secondary-container flex items-center justify-center text-primary shadow-sm">
-              <Sparkles className="w-7 h-7" />
+            <div className="w-14 h-14 rounded-full bg-secondary-container flex items-center justify-center text-primary-dark shadow-sm">
+              <Sparkles className="w-7 h-7 text-primary" />
             </div>
 
             <div className="space-y-1">
-              <h2 className="font-headline text-2xl font-medium text-on-surface">
+              <h2 className="font-headline text-2xl font-bold text-on-surface">
                 Pause complete
               </h2>
-              <p className="text-sm text-on-surface-variant max-w-md">
+              <p className="text-sm text-stone-700 max-w-md">
                 Take a gentle breath. How does your body feel now compared to before this exercise?
               </p>
             </div>
 
             {/* 1-5 Relief Rating Pills */}
             <div className="w-full space-y-3">
-              <label className="block text-xs font-medium text-on-surface-variant uppercase tracking-wider">
+              <label className="block text-sm font-semibold text-stone-700 uppercase tracking-wider">
                 Self-Reported Relief (1 to 5)
               </label>
               <div className="grid grid-cols-5 gap-2 sm:gap-3">
@@ -375,8 +375,8 @@ export const ReliefTimer: React.FC<ReliefTimerProps> = ({
                           : 'bg-surfaceLowest border-outline-variant hover:border-primary hover:bg-surfaceContainer text-on-surface'
                       }`}
                     >
-                      <span className="font-headline text-lg font-semibold">{rating}</span>
-                      <span className="text-[11px] font-normal leading-tight text-center mt-1">
+                      <span className="font-headline text-lg font-bold">{rating}</span>
+                      <span className="text-sm font-medium leading-tight text-center mt-1">
                         {text}
                       </span>
                     </button>

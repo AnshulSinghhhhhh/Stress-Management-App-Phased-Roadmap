@@ -25,17 +25,17 @@ export const ReliefLibraryPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-[960px] mx-auto px-4 md:px-6 py-8 space-y-8">
+    <div className="w-full max-w-[960px] mx-auto px-4 md:px-6 py-8 space-y-8 animate-fade-in">
       {/* Page Header */}
       <div className="text-center space-y-2 max-w-xl mx-auto">
-        <div className="inline-flex items-center space-x-1.5 px-3.5 py-1 rounded-full bg-secondary-container/60 border border-outline-variant text-primary text-xs font-medium">
-          <Heart className="w-3.5 h-3.5" />
-          <span>Evidence-Based Somatic &amp; Attentional Relief</span>
+        <div className="inline-flex items-center space-x-2 px-4 py-1 rounded-full bg-secondary-container text-primary-dark text-sm font-semibold">
+          <Heart className="w-4 h-4 text-primary" />
+          <span>Evidence-Based Somatic Exercises</span>
         </div>
-        <h1 className="font-headline text-3xl md:text-4xl text-on-surface font-medium tracking-tight">
+        <h1 className="font-headline text-3xl md:text-4xl text-on-surface font-semibold tracking-tight">
           Restorative Relief Sanctuary
         </h1>
-        <p className="text-sm md:text-base text-on-surface-variant">
+        <p className="text-base text-stone-700">
           In-the-moment exercises designed to deactivate sympathetic fight-or-flight within 3 to 4 minutes.
         </p>
       </div>
@@ -54,11 +54,11 @@ export const ReliefLibraryPage: React.FC = () => {
                   {getTechniqueIcon(tech.id)}
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-medium border border-outline-variant">
+                  <span className="text-sm px-3 py-0.5 rounded-full bg-surface-container text-stone-700 font-semibold border border-outline-variant">
                     {tech.badge}
                   </span>
-                  <div className="flex items-center space-x-1 text-xs text-outline">
-                    <Clock className="w-3 h-3" />
+                  <div className="flex items-center space-x-1 text-sm text-stone-700 font-medium">
+                    <Clock className="w-3.5 h-3.5" />
                     <span>{tech.durationMinutes}m</span>
                   </div>
                 </div>
@@ -66,13 +66,13 @@ export const ReliefLibraryPage: React.FC = () => {
 
               {/* Title & Description */}
               <div className="space-y-1.5">
-                <h3 className="font-headline text-xl font-medium text-on-surface group-hover:text-primary transition-colors">
+                <h3 className="font-headline text-xl font-bold text-on-surface group-hover:text-primary-dark transition-colors">
                   {tech.title}
                 </h3>
-                <p className="text-xs font-medium text-primary">
+                <p className="text-sm font-semibold text-primary-dark">
                   {tech.subtitle}
                 </p>
-                <p className="text-xs text-on-surface-variant leading-relaxed pt-1">
+                <p className="text-sm text-stone-700 leading-relaxed pt-1">
                   {tech.description}
                 </p>
               </div>
@@ -82,9 +82,9 @@ export const ReliefLibraryPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTechniqueId(tech.id)}
-              className="w-full py-2.5 px-4 rounded-full bg-surface-container hover:bg-primary text-on-surface hover:text-white font-medium text-xs sm:text-sm transition-all duration-200 inline-flex items-center justify-center space-x-2 border border-outline-variant group-hover:border-primary active:scale-95"
+              className="w-full py-3 px-4 rounded-full bg-surface-container hover:bg-primary text-on-surface hover:text-white font-semibold text-sm transition-all duration-200 inline-flex items-center justify-center space-x-2 border border-outline-variant group-hover:border-primary active:scale-95 shadow-xs"
             >
-              <Play className="w-3.5 h-3.5 fill-current" />
+              <Play className="w-4 h-4 fill-current" />
               <span>Begin Session</span>
             </button>
           </div>
@@ -92,14 +92,14 @@ export const ReliefLibraryPage: React.FC = () => {
       </div>
 
       {/* Reassurance Banner */}
-      <div className="bg-surface-container-low border border-outline-variant rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-on-surface-variant">
+      <div className="bg-surface-container-low border border-outline-variant rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-stone-700">
         <div className="flex items-center space-x-2">
-          <ShieldCheck className="w-4 h-4 text-primary flex-shrink-0" />
+          <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
           <span>
             Clinically aligned protocols. Zero competition, zero streaks, purely for your peace of mind.
           </span>
         </div>
-        <span className="text-outline">Free &amp; available 24/7</span>
+        <span className="text-stone-700 font-semibold">Free &amp; available 24/7</span>
       </div>
 
       {/* Active Modal Timer if launched */}

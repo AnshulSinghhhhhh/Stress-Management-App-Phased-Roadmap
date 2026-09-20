@@ -6,24 +6,30 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "test": "vitest run",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
     "@supabase/server": "^1.6.0",
     "@supabase/supabase-js": "^2.116.0",
+    "canvas-confetti": "^1.9.4",
+    "framer-motion": "^13.4.0",
     "lucide-react": "^0.378.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.6.0",
     "postcss": "^8.5.28",
+    "puppeteer-core": "^25.11.0",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.4.5",
-    "vite": "^5.2.11"
+    "vite": "^5.2.11",
+    "vitest": "^1.6.1"
   }
 }
